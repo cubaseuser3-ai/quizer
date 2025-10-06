@@ -9,6 +9,24 @@ const httpServer = createServer(app)
 app.use(cors())
 app.use(express.json())
 
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    message: 'MyTech Quizer Backend is running',
+    activeRooms: gameRooms.size,
+    uptime: process.uptime()
+  })
+})
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    activeRooms: gameRooms.size,
+    uptime: process.uptime()
+  })
+})
+
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.NODE_ENV === 'production'

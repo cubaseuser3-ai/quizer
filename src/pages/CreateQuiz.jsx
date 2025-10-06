@@ -1,10 +1,14 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload } from 'lucide-react'
 import './CreateQuiz.css'
 
 function CreateQuiz() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editQuizId = searchParams.get('edit')
+
+  const [quizId, setQuizId] = useState(null)
   const [quizTitle, setQuizTitle] = useState('')
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
@@ -12,6 +16,18 @@ function CreateQuiz() {
   const [quizzes, setQuizzes] = useState(() => {
     return JSON.parse(localStorage.getItem('quizzes') || '[]')
   })
+
+  // Lade Quiz zum Bearbeiten
+  useEffect(() => {
+    if (editQuizId) {
+      const quizToEdit = quizzes.find(q => q.id === editQuizId)
+      if (quizToEdit) {
+        setQuizId(quizToEdit.id)
+        setQuizTitle(quizToEdit.title)
+        setQuestions(quizToEdit.questions || [])
+      }
+    }
+  }, [editQuizId, quizzes])
 
   const handleExportQuizzes = () => {
     const dataStr = JSON.stringify(quizzes, null, 2)
@@ -36,20 +52,42 @@ function CreateQuiz() {
         const importedQuizzes = JSON.parse(e.target.result)
         if (!Array.isArray(importedQuizzes)) {
           alert('❌ Ungültiges Dateiformat!')
+          event.target.value = '' // Reset input
           return
         }
 
-        const existingQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
-        const mergedQuizzes = [...existingQuizzes, ...importedQuizzes]
-        localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes))
-        setQuizzes(mergedQuizzes)
-        alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich importiert!`)
+        // Ersetze alle Quizze mit den importierten
+        const currentCount = JSON.parse(localStorage.getItem('quizzes') || '[]').length
+        localStorage.setItem('quizzes', JSON.stringify(importedQuizzes))
+
+        if (currentCount > 0) {
+          alert(`✅ Erfolgreich geladen!\n\n${currentCount} alte Quiz(ze) wurden ersetzt durch ${importedQuizzes.length} Quiz(ze) aus der Datei.`)
+        } else {
+          alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich geladen!`)
+        }
+
+        // Seite neu laden um Quiz anzuzeigen
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
       } catch (error) {
         alert('❌ Fehler beim Importieren der Datei!')
         console.error(error)
+        event.target.value = '' // Reset input
       }
     }
     reader.readAsText(file)
+  }
+
+  const handleBackClick = () => {
+    if (quizTitle.trim() || questions.length > 0) {
+      const result = window.confirm('⚠️ Ungespeicherte Änderungen!\n\nWillst du wirklich zurück? (Änderungen gehen verloren)')
+      if (!result) {
+        // User clicked "Abbrechen" - stay on page
+        return
+      }
+    }
+    navigate('/')
   }
 
   const questionTypes = [
@@ -127,20 +165,36 @@ function CreateQuiz() {
       return
     }
 
-    const quiz = {
-      id: Date.now().toString(),
-      title: quizTitle,
-      questions: questions,
-      createdAt: new Date().toISOString()
-    }
-
-    // Save to localStorage for demo
     const savedQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
-    savedQuizzes.push(quiz)
-    localStorage.setItem('quizzes', JSON.stringify(savedQuizzes))
 
-    alert('Quiz gespeichert!')
-    navigate(`/host/${quiz.id}`)
+    if (quizId) {
+      // Bearbeite bestehendes Quiz
+      const quiz = {
+        id: quizId,
+        title: quizTitle,
+        questions: questions,
+        createdAt: savedQuizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+
+      const updatedQuizzes = savedQuizzes.map(q => q.id === quizId ? quiz : q)
+      localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+      alert('Quiz aktualisiert!')
+      navigate(`/host/${quiz.id}`)
+    } else {
+      // Erstelle neues Quiz
+      const quiz = {
+        id: Date.now().toString(),
+        title: quizTitle,
+        questions: questions,
+        createdAt: new Date().toISOString()
+      }
+
+      savedQuizzes.push(quiz)
+      localStorage.setItem('quizzes', JSON.stringify(savedQuizzes))
+      alert('Quiz gespeichert!')
+      navigate(`/host/${quiz.id}`)
+    }
   }
 
   return (
@@ -148,11 +202,11 @@ function CreateQuiz() {
       <div className="create-header">
         <div className="container">
           <div className="header-content">
-            <button className="btn btn-outline" onClick={() => navigate('/')}>
+            <button className="btn btn-primary" onClick={handleBackClick}>
               <ArrowLeft size={20} />
               Zurück
             </button>
-            <h1>Quiz erstellen</h1>
+            <h1>{quizId ? 'Quiz bearbeiten' : 'Quiz erstellen'}</h1>
             <div style={{ display: 'flex', gap: '10px' }}>
               {quizzes.length > 0 && (
                 <>

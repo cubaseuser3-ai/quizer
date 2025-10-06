@@ -99,11 +99,16 @@ function JoinQuiz() {
             </div>
 
             <button
-              className="btn btn-primary btn-lg"
+              className="btn btn-success btn-lg animate-pulse"
               onClick={handleJoin}
               disabled={!playerName.trim() || !joinCode.trim()}
+              style={{
+                fontSize: '1.2rem',
+                padding: '1rem 2rem',
+                boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)'
+              }}
             >
-              <LogIn size={24} />
+              <LogIn size={28} />
               Jetzt beitreten
             </button>
           </div>

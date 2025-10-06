@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload } from 'lucide-react'
+import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload, Edit, Trash2, Copy } from 'lucide-react'
 import './Home.css'
 
 function Home() {
@@ -32,20 +32,66 @@ function Home() {
         const importedQuizzes = JSON.parse(e.target.result)
         if (!Array.isArray(importedQuizzes)) {
           alert('❌ Ungültiges Dateiformat!')
+          event.target.value = '' // Reset input
           return
         }
 
-        const existingQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
-        const mergedQuizzes = [...existingQuizzes, ...importedQuizzes]
-        localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes))
-        setQuizzes(mergedQuizzes)
-        alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich importiert!`)
+        // Ersetze alle Quizze mit den importierten
+        const currentCount = JSON.parse(localStorage.getItem('quizzes') || '[]').length
+        localStorage.setItem('quizzes', JSON.stringify(importedQuizzes))
+
+        if (currentCount > 0) {
+          alert(`✅ Erfolgreich geladen!\n\n${currentCount} alte Quiz(ze) wurden ersetzt durch ${importedQuizzes.length} Quiz(ze) aus der Datei.`)
+        } else {
+          alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich geladen!`)
+        }
+
+        // Seite neu laden um Quiz anzuzeigen
+        setTimeout(() => {
+          window.location.reload()
+        }, 500)
       } catch (error) {
         alert('❌ Fehler beim Importieren der Datei!')
         console.error(error)
+        event.target.value = '' // Reset input
       }
     }
     reader.readAsText(file)
+  }
+
+  const handleDeleteQuiz = (quizId, quizTitle) => {
+    if (window.confirm(`🗑️ Quiz löschen?\n\n"${quizTitle}" wird unwiderruflich gelöscht.`)) {
+      const updatedQuizzes = quizzes.filter(q => q.id !== quizId)
+      localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+      setQuizzes(updatedQuizzes)
+    }
+  }
+
+  const handleEditQuiz = (quizId) => {
+    navigate(`/create?edit=${quizId}`)
+  }
+
+  const handleDeleteAllQuizzes = () => {
+    if (window.confirm(`🗑️ Alle Quizze löschen?\n\n${quizzes.length} Quiz(ze) werden unwiderruflich gelöscht!`)) {
+      if (window.confirm('⚠️ Bist du sicher?\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) {
+        localStorage.setItem('quizzes', JSON.stringify([]))
+        setQuizzes([])
+      }
+    }
+  }
+
+  const handleDuplicateQuiz = (quiz) => {
+    const duplicatedQuiz = {
+      ...quiz,
+      id: Date.now().toString(),
+      title: `${quiz.title} (Kopie)`,
+      createdAt: new Date().toISOString()
+    }
+
+    const updatedQuizzes = [...quizzes, duplicatedQuiz]
+    localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+    setQuizzes(updatedQuizzes)
+    alert(`✅ Quiz "${quiz.title}" wurde dupliziert!`)
   }
 
   const features = [
@@ -104,25 +150,23 @@ function Home() {
           <div className="nav-content">
             <div className="logo">
               <Sparkles size={32} />
-              <h1>Quizer</h1>
+              <h1>MyTech Quizer</h1>
             </div>
             <div className="nav-buttons">
-              <button className="btn btn-outline" onClick={() => navigate('/join')}>
+              <button className="btn btn-primary" onClick={() => navigate('/join')}>
                 Quiz beitreten
               </button>
               {quizzes.length > 0 && (
-                <>
-                  <button className="btn btn-secondary" onClick={handleExportQuizzes} title="Quiz herunterladen">
-                    <Download size={20} />
-                    Download
-                  </button>
-                  <label className="btn btn-secondary" title="Quiz hochladen" style={{ cursor: 'pointer' }}>
-                    <Upload size={20} />
-                    Upload
-                    <input type="file" accept=".json" onChange={handleImportQuizzes} style={{ display: 'none' }} />
-                  </label>
-                </>
+                <button className="btn btn-secondary" onClick={handleExportQuizzes} title="Quiz herunterladen">
+                  <Download size={20} />
+                  Download
+                </button>
               )}
+              <label className="btn btn-secondary" title="Quiz hochladen" style={{ cursor: 'pointer' }}>
+                <Upload size={20} />
+                Upload
+                <input type="file" accept=".json" onChange={handleImportQuizzes} style={{ display: 'none' }} />
+              </label>
               <button className="btn btn-primary" onClick={() => navigate('/create')}>
                 <Plus size={20} />
                 Quiz erstellen
@@ -132,104 +176,90 @@ function Home() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="container">
-          <div className="hero-content animate-fadeIn">
-            <div className="hero-badge">
-              <span className="badge badge-primary">
-                <Sparkles size={16} />
-                Über 50.000+ Quiz erstellt
-              </span>
+      {/* Main Content */}
+      <div style={{ paddingTop: '100px', minHeight: '80vh' }}>
+        {/* Saved Quizzes Section */}
+        {quizzes.length > 0 ? (
+          <section className="saved-quizzes">
+            <div className="container">
+              <div className="section-header">
+                <h2>Meine gespeicherten Quizze ({quizzes.length})</h2>
+                <p>Klicke auf ein Quiz um es zu bearbeiten</p>
+                <button
+                  className="btn btn-outline-danger"
+                  onClick={handleDeleteAllQuizzes}
+                  style={{
+                    marginTop: '10px',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: 'var(--danger)',
+                    border: '2px solid var(--danger)'
+                  }}
+                >
+                  <Trash2 size={20} />
+                  Alle Quizze löschen
+                </button>
+              </div>
+              <div className="features-grid">
+                {quizzes.map((quiz) => (
+                  <div key={quiz.id} className="feature-card card quiz-card">
+                    <div className="quiz-card-actions">
+                      <button
+                        className="btn-icon-small"
+                        onClick={(e) => { e.stopPropagation(); handleDuplicateQuiz(quiz); }}
+                        title="Duplizieren"
+                      >
+                        <Copy size={18} />
+                      </button>
+                      <button
+                        className="btn-icon-small"
+                        onClick={(e) => { e.stopPropagation(); handleEditQuiz(quiz.id); }}
+                        title="Bearbeiten"
+                      >
+                        <Edit size={18} />
+                      </button>
+                      <button
+                        className="btn-icon-small btn-icon-danger"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteQuiz(quiz.id, quiz.title); }}
+                        title="Löschen"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    <div onClick={() => navigate(`/create?edit=${quiz.id}`)} style={{ cursor: 'pointer' }}>
+                      <div className="feature-icon">
+                        <Trophy size={40} />
+                      </div>
+                      <h3>{quiz.title}</h3>
+                      <p>{quiz.questions.length} Fragen • {quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0)} Punkte</p>
+                      <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b' }}>
+                        Erstellt am {new Date(quiz.createdAt).toLocaleDateString('de-DE')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <h1 className="hero-title">
-              Erstelle interaktive
-              <span className="gradient-text"> Quiz Shows</span>
-              <br />
-              direkt im Browser
-            </h1>
-            <p className="hero-subtitle">
-              Verwende dein Smartphone als Buzzer. Keine App-Installation nötig.
-              Perfekt für Präsentationen, Klassenzimmer, Partys und Meetings.
-            </p>
-            <div className="hero-buttons">
-              <button className="btn btn-primary btn-lg" onClick={() => navigate('/create')}>
-                <Plus size={24} />
-                Jetzt Quiz erstellen
-              </button>
-              <button className="btn btn-secondary btn-lg" onClick={() => navigate('/join')}>
-                <Play size={24} />
-                Quiz beitreten
-              </button>
-            </div>
-            <div className="hero-stats">
-              <div className="stat">
-                <div className="stat-number">56K+</div>
-                <div className="stat-label">Quiz Ersteller</div>
-              </div>
-              <div className="stat">
-                <div className="stat-number">1.2M+</div>
-                <div className="stat-label">Teilnehmer</div>
-              </div>
-              <div className="stat">
-                <div className="stat-number">212</div>
-                <div className="stat-label">Länder</div>
+          </section>
+        ) : (
+          <section className="empty-state-section">
+            <div className="container">
+              <div className="empty-state-content">
+                <div className="empty-icon">
+                  <Sparkles size={80} />
+                </div>
+                <h2>Noch keine Quizze vorhanden</h2>
+                <p>Erstelle dein erstes Quiz oder lade ein bestehendes Quiz hoch</p>
+                <div className="empty-actions">
+                  <button className="btn btn-primary btn-lg" onClick={() => navigate('/create')}>
+                    <Plus size={24} />
+                    Quiz erstellen
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="features">
-        <div className="container">
-          <div className="section-header">
-            <h2>Warum Quizer?</h2>
-            <p>Alles was du für eine perfekte Quiz Show brauchst</p>
-          </div>
-          <div className="features-grid">
-            {features.map((feature, index) => (
-              <div key={index} className="feature-card card" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="feature-icon">{feature.icon}</div>
-                <h3>{feature.title}</h3>
-                <p>{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Question Types Section */}
-      <section className="question-types">
-        <div className="container">
-          <div className="section-header">
-            <h2>12 verschiedene Fragetypen</h2>
-            <p>Gestalte dein Quiz so abwechslungsreich wie möglich</p>
-          </div>
-          <div className="types-grid">
-            {questionTypes.map((type, index) => (
-              <div key={index} className="type-badge">
-                <Zap size={20} />
-                {type}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="cta">
-        <div className="container">
-          <div className="cta-content card">
-            <h2>Bereit für deine erste Quiz Show?</h2>
-            <p>Erstelle in wenigen Minuten dein eigenes interaktives Quiz</p>
-            <button className="btn btn-primary btn-lg animate-pulse" onClick={() => navigate('/create')}>
-              <Plus size={24} />
-              Kostenlos starten
-            </button>
-          </div>
-        </div>
-      </section>
+          </section>
+        )}
+      </div>
 
       {/* Footer */}
       <footer className="footer">
@@ -237,9 +267,9 @@ function Home() {
           <div className="footer-content">
             <div className="footer-logo">
               <Sparkles size={28} />
-              <h3>Quizer</h3>
+              <h3>MyTech Quizer</h3>
             </div>
-            <p>© 2024 Quizer. Interaktive Quiz Shows für jeden Anlass.</p>
+            <p>© 2025 MyTech Quizer. Interaktive Quiz Shows für jeden Anlass.</p>
           </div>
         </div>
       </footer>

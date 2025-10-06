@@ -1,0 +1,39 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /Quiz/
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /Quiz/index.html [L]
+</IfModule>
+
+# Cache Control Headers
+<IfModule mod_headers.c>
+  # HTML - Kein Cache
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # JavaScript und CSS - Kurzer Cache mit Version
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "public, max-age=3600, must-revalidate"
+  </FilesMatch>
+
+  # Bilder - Längerer Cache
+  <FilesMatch "\.(jpg|jpeg|png|gif|ico|svg|webp)$">
+    Header set Cache-Control "public, max-age=86400"
+  </FilesMatch>
+
+  # JSON - Kein Cache
+  <FilesMatch "\.(json)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+# Disable ETags
+<IfModule mod_headers.c>
+  Header unset ETag
+</IfModule>
+FileETag None
