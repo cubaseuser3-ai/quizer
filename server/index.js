@@ -130,7 +130,7 @@ io.on('connection', (socket) => {
 
   // Player submits an answer
   socket.on('submit-answer', (data) => {
-    const { roomCode, answer } = data
+    const { roomCode, answer, responseTime } = data
     const room = gameRooms.get(roomCode)
 
     if (!room) return
@@ -141,8 +141,40 @@ io.on('connection', (socket) => {
     const currentQuestion = room.quiz.questions[room.currentQuestion]
     const isCorrect = answer === currentQuestion.correctAnswer
 
+    // Initialize answers array for this question if not exists
+    if (!room.questionAnswers) room.questionAnswers = []
+    if (!room.questionAnswers[room.currentQuestion]) {
+      room.questionAnswers[room.currentQuestion] = []
+    }
+
+    // Store answer with timestamp
+    room.questionAnswers[room.currentQuestion].push({
+      playerId: player.id,
+      playerName: player.name,
+      playerAvatar: player.avatar,
+      correct: isCorrect,
+      responseTime: responseTime,
+      timestamp: Date.now()
+    })
+
+    // Calculate bonus points for speed (only if correct)
+    let bonusPoints = 0
     if (isCorrect) {
-      player.score += currentQuestion.points
+      const correctAnswers = room.questionAnswers[room.currentQuestion]
+        .filter(a => a.correct)
+        .sort((a, b) => a.responseTime - b.responseTime)
+
+      const rank = correctAnswers.findIndex(a => a.playerId === player.id) + 1
+
+      if (rank === 1) bonusPoints = 50
+      else if (rank === 2) bonusPoints = 30
+      else if (rank === 3) bonusPoints = 10
+    }
+
+    let totalPoints = 0
+    if (isCorrect) {
+      totalPoints = currentQuestion.points + bonusPoints
+      player.score += totalPoints
     }
 
     // Notify the player about their answer
@@ -150,14 +182,20 @@ io.on('connection', (socket) => {
       correct: isCorrect,
       correctAnswer: currentQuestion.correctAnswer,
       points: isCorrect ? currentQuestion.points : 0,
-      newScore: player.score
+      bonusPoints: bonusPoints,
+      totalPoints: totalPoints,
+      newScore: player.score,
+      responseTime: responseTime
     })
 
     // Notify host about player's answer
     io.to(room.host).emit('player-answered', {
       playerId: player.id,
       playerName: player.name,
-      correct: isCorrect
+      playerAvatar: player.avatar,
+      correct: isCorrect,
+      responseTime: responseTime,
+      bonusPoints: bonusPoints
     })
   })
 

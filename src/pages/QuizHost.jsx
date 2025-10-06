@@ -69,11 +69,17 @@ function QuizHost() {
     })
 
     socket.on('player-answered', (data) => {
-      console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗')
+      console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗', data.responseTime + 's')
       // Update player list with answer status
       setPlayers(prev => prev.map(p =>
         p.id === data.playerId
-          ? { ...p, hasAnswered: true, correct: data.correct }
+          ? {
+              ...p,
+              hasAnswered: true,
+              correct: data.correct,
+              responseTime: data.responseTime,
+              bonusPoints: data.bonusPoints || 0
+            }
           : p
       ))
     })
@@ -152,10 +158,14 @@ function QuizHost() {
 
   const showResults = () => {
     setShowAnswers(true)
-    setTimeout(() => {
-      setGameState('results')
-      socket.emit('show-results', { roomCode: joinCode })
-    }, 3000)
+
+    // Wenn Quiz die Option hat, automatisch Rangliste anzeigen
+    if (quiz.showLeaderboardAfterQuestion) {
+      setTimeout(() => {
+        setGameState('results')
+        socket.emit('show-results', { roomCode: joinCode })
+      }, 2000) // 2 Sekunden warten bevor Rangliste kommt
+    }
   }
 
   const handleRestartQuiz = () => {
@@ -355,12 +365,60 @@ function QuizHost() {
             )}
           </div>
 
+          {/* Player Answers Section */}
+          {currentQuestion.type !== 'buzzer' && (
+            <div className="card" style={{ marginTop: '20px', padding: '20px' }}>
+              <h3 style={{ marginBottom: '16px', color: 'white' }}>Spieler-Antworten</h3>
+              <div className="player-answers-list">
+                {players.length === 0 ? (
+                  <p style={{ color: '#64748b', textAlign: 'center' }}>Keine Spieler</p>
+                ) : (
+                  players.map(player => (
+                    <div key={player.id} className="player-answer-item" style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      background: player.hasAnswered ? (player.correct ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)') : '#f8fafc',
+                      borderRadius: '8px',
+                      marginBottom: '8px'
+                    }}>
+                      <span style={{ fontSize: '24px' }}>{player.avatar}</span>
+                      <span style={{ flex: 1, fontWeight: '600', color: '#1e293b' }}>{player.name}</span>
+                      {player.hasAnswered ? (
+                        <>
+                          <span style={{ fontSize: '16px', color: '#64748b' }}>
+                            ⏱️ {player.responseTime?.toFixed(1)}s
+                          </span>
+                          {player.bonusPoints > 0 && (
+                            <span style={{ fontSize: '14px', color: '#fbbf24', fontWeight: '700' }}>
+                              +{player.bonusPoints} ⚡
+                            </span>
+                          )}
+                          <span style={{ fontSize: '20px' }}>
+                            {player.correct ? '✓' : '✗'}
+                          </span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>⏳ Wartet...</span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="host-controls">
             {!showAnswers ? (
               <button className="btn btn-secondary btn-lg" onClick={showResults}>
-                Antworten zeigen
+                {quiz.showLeaderboardAfterQuestion ? '→ Antworten & Rangliste zeigen' : 'Antworten zeigen'}
               </button>
-            ) : (
+            ) : quiz.showLeaderboardAfterQuestion && gameState !== 'results' ? (
+              <div style={{ color: 'white', fontSize: '18px', padding: '20px' }}>
+                ⏳ Zeige Rangliste in Kürze...
+              </div>
+            ) : !quiz.showLeaderboardAfterQuestion ? (
               <button className="btn btn-success btn-lg" onClick={nextQuestion}>
                 {currentQuestionIndex < quiz.questions.length - 1 ? (
                   <>
@@ -374,7 +432,7 @@ function QuizHost() {
                   </>
                 )}
               </button>
-            )}
+            ) : null}
           </div>
         </div>
       )}

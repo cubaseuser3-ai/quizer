@@ -11,6 +11,7 @@ function CreateQuiz() {
   const [quizId, setQuizId] = useState(null)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizPassword, setQuizPassword] = useState('')
+  const [showLeaderboardAfterQuestion, setShowLeaderboardAfterQuestion] = useState(false)
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
@@ -36,6 +37,7 @@ function CreateQuiz() {
         setQuizId(quizToEdit.id)
         setQuizTitle(quizToEdit.title)
         setQuizPassword(quizToEdit.password || '')
+        setShowLeaderboardAfterQuestion(quizToEdit.showLeaderboardAfterQuestion || false)
         setQuestions(quizToEdit.questions || [])
       }
     }
@@ -119,7 +121,9 @@ function CreateQuiz() {
     answers: ['', '', '', ''],
     correctAnswer: 0,
     points: 100,
-    timeLimit: 30
+    timeLimit: 30,
+    timeMode: 'fixed', // 'fixed', 'waitAll', 'unlimited'
+    maxTimeout: 60 // Nur für 'waitAll'
   })
 
   const addQuestion = () => {
@@ -131,7 +135,9 @@ function CreateQuiz() {
       answers: ['', '', '', ''],
       correctAnswer: 0,
       points: 100,
-      timeLimit: 30
+      timeLimit: 30,
+      timeMode: 'fixed',
+      maxTimeout: 60
     })
   }
 
@@ -185,6 +191,7 @@ function CreateQuiz() {
         id: quizId,
         title: quizTitle,
         password: quizPassword || undefined, // Nur speichern wenn gesetzt
+        showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
         questions: questions,
         createdAt: savedQuizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -192,20 +199,35 @@ function CreateQuiz() {
 
       const updatedQuizzes = savedQuizzes.map(q => q.id === quizId ? quiz : q)
       localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
-      alert('Quiz aktualisiert!')
-      navigate(`/host/${quiz.id}`)
+      return quiz
     } else {
       // Erstelle neues Quiz
       const quiz = {
         id: Date.now().toString(),
         title: quizTitle,
         password: quizPassword || undefined, // Nur speichern wenn gesetzt
+        showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
         questions: questions,
         createdAt: new Date().toISOString()
       }
 
       savedQuizzes.push(quiz)
       localStorage.setItem('quizzes', JSON.stringify(savedQuizzes))
+      return quiz
+    }
+  }
+
+  const handleSave = () => {
+    const quiz = saveQuiz()
+    if (quiz) {
+      alert('Quiz gespeichert!')
+      navigate('/')
+    }
+  }
+
+  const handleSaveAndStart = () => {
+    const quiz = saveQuiz()
+    if (quiz) {
       alert('Quiz gespeichert!')
       navigate(`/host/${quiz.id}`)
     }
@@ -235,8 +257,13 @@ function CreateQuiz() {
                   </label>
                 </>
               )}
-              <button className="btn btn-success" onClick={saveQuiz} disabled={questions.length === 0}>
+              <button className="btn btn-outline" onClick={handleSave} disabled={questions.length === 0}>
                 <Save size={20} />
+                Speichern
+              </button>
+              <button className="btn btn-success" onClick={handleSaveAndStart} disabled={questions.length === 0}>
+                <Save size={20} />
+                <Play size={20} />
                 Speichern & Starten
               </button>
             </div>
@@ -267,6 +294,20 @@ function CreateQuiz() {
               <small style={{ color: '#64748b', fontSize: '14px', marginTop: '8px', display: 'block' }}>
                 Mit einem Passwort können nur Personen mit dem Passwort dieses Quiz bearbeiten oder starten.
               </small>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={showLeaderboardAfterQuestion}
+                onChange={(e) => setShowLeaderboardAfterQuestion(e.target.checked)}
+                style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+              />
+              <div>
+                <h3 style={{ margin: 0 }}>Rangliste nach jeder Frage anzeigen 🏆</h3>
+                <small style={{ color: '#64748b', fontSize: '14px', display: 'block' }}>
+                  Nach jeder Frage wird automatisch die Rangliste angezeigt, bevor die nächste Frage kommt.
+                </small>
+              </div>
             </label>
             <div className="quiz-stats">
               <div className="stat-item">
@@ -431,15 +472,46 @@ function CreateQuiz() {
 
               <div className="question-settings">
                 <label>
-                  <h4>Zeit Limit (Sekunden)</h4>
-                  <input
-                    type="number"
-                    min="5"
-                    max="120"
-                    value={currentQuestion.timeLimit}
-                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) })}
-                  />
+                  <h4>Zeit-Modus ⏱️</h4>
+                  <select
+                    value={currentQuestion.timeMode || 'fixed'}
+                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeMode: e.target.value })}
+                  >
+                    <option value="fixed">⏱️ Feste Zeit</option>
+                    <option value="waitAll">👥 Bis alle geantwortet haben</option>
+                    <option value="unlimited">∞ Unbegrenzt (Moderator entscheidet)</option>
+                  </select>
                 </label>
+
+                {currentQuestion.timeMode === 'fixed' && (
+                  <label>
+                    <h4>Zeit (Sekunden)</h4>
+                    <input
+                      type="number"
+                      min="5"
+                      max="300"
+                      value={currentQuestion.timeLimit}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeLimit: parseInt(e.target.value) })}
+                    />
+                  </label>
+                )}
+
+                {currentQuestion.timeMode === 'waitAll' && (
+                  <label>
+                    <h4>Max. Timeout (Sekunden)</h4>
+                    <input
+                      type="number"
+                      min="10"
+                      max="300"
+                      value={currentQuestion.maxTimeout || 60}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, maxTimeout: parseInt(e.target.value) })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      Maximale Wartezeit falls nicht alle antworten
+                    </small>
+                  </label>
+                )}
+
                 <label>
                   <h4>Punkte</h4>
                   <input

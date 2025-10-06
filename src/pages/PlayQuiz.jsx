@@ -17,6 +17,7 @@ function PlayQuiz() {
   const [buzzerPressed, setBuzzerPressed] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
+  const [questionStartTime, setQuestionStartTime] = useState(null)
 
   useEffect(() => {
     // Load player info
@@ -66,6 +67,7 @@ function PlayQuiz() {
       setSelectedAnswer(null)
       setAnswerResult(null)
       setBuzzerActive(data.question.type === 'buzzer')
+      setQuestionStartTime(Date.now()) // Track when question started
     })
 
     socket.on('next-question', (data) => {
@@ -76,6 +78,7 @@ function PlayQuiz() {
       setSelectedAnswer(null)
       setAnswerResult(null)
       setBuzzerActive(data.question.type === 'buzzer')
+      setQuestionStartTime(Date.now()) // Track when question started
     })
 
     socket.on('answer-result', (data) => {
@@ -155,10 +158,14 @@ function PlayQuiz() {
 
     setSelectedAnswer(index)
 
+    // Calculate response time
+    const responseTime = questionStartTime ? (Date.now() - questionStartTime) / 1000 : 0
+
     // Send answer to server
     socket.emit('submit-answer', {
       roomCode: playerInfo.joinCode,
-      answer: index
+      answer: index,
+      responseTime: responseTime
     })
   }
 
@@ -304,6 +311,16 @@ function PlayQuiz() {
                 <div className="result-icon success">✓</div>
                 <h2 className="result-title success">Richtig!</h2>
                 <p className="result-points">+{answerResult.points} Punkte</p>
+                {answerResult.bonusPoints > 0 && (
+                  <p className="result-bonus" style={{ color: '#fbbf24', fontSize: '20px', fontWeight: '700', marginTop: '10px' }}>
+                    ⚡ +{answerResult.bonusPoints} Geschwindigkeitsbonus!
+                  </p>
+                )}
+                {answerResult.responseTime && (
+                  <p style={{ color: '#64748b', fontSize: '16px', marginTop: '10px' }}>
+                    ⏱️ {answerResult.responseTime.toFixed(1)}s
+                  </p>
+                )}
               </>
             ) : (
               <>
