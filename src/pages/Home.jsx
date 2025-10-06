@@ -229,10 +229,14 @@ function Home() {
                       <div className="feature-icon">
                         <Trophy size={40} />
                       </div>
-                      <h3>{quiz.title}</h3>
+                      <h3>
+                        {quiz.password && <span style={{ marginRight: '8px' }}>🔒</span>}
+                        {quiz.title}
+                      </h3>
                       <p>{quiz.questions.length} Fragen • {quiz.questions.reduce((sum, q) => sum + (q.points || 0), 0)} Punkte</p>
                       <div style={{ marginTop: '10px', fontSize: '12px', color: '#64748b' }}>
                         Erstellt am {new Date(quiz.createdAt).toLocaleDateString('de-DE')}
+                        {quiz.password && <span style={{ marginLeft: '8px', color: '#6366f1' }}>• Passwortgeschützt</span>}
                       </div>
                     </div>
                   </div>

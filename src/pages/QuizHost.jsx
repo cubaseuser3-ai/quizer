@@ -26,6 +26,16 @@ function QuizHost() {
     const foundQuiz = savedQuizzes.find(q => q.id === quizId)
 
     if (foundQuiz) {
+      // Prüfe Passwort wenn vorhanden
+      if (foundQuiz.password) {
+        const inputPassword = prompt('🔒 Dieses Quiz ist passwortgeschützt.\n\nBitte Passwort eingeben um zu starten:')
+        if (inputPassword !== foundQuiz.password) {
+          alert('❌ Falsches Passwort!')
+          navigate('/')
+          return
+        }
+      }
+
       setQuiz(foundQuiz)
     } else {
       alert('Quiz nicht gefunden')

@@ -10,6 +10,7 @@ function CreateQuiz() {
 
   const [quizId, setQuizId] = useState(null)
   const [quizTitle, setQuizTitle] = useState('')
+  const [quizPassword, setQuizPassword] = useState('')
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
@@ -22,12 +23,23 @@ function CreateQuiz() {
     if (editQuizId) {
       const quizToEdit = quizzes.find(q => q.id === editQuizId)
       if (quizToEdit) {
+        // Prüfe Passwort wenn vorhanden
+        if (quizToEdit.password) {
+          const inputPassword = prompt('🔒 Dieses Quiz ist passwortgeschützt.\n\nBitte Passwort eingeben:')
+          if (inputPassword !== quizToEdit.password) {
+            alert('❌ Falsches Passwort!')
+            navigate('/')
+            return
+          }
+        }
+
         setQuizId(quizToEdit.id)
         setQuizTitle(quizToEdit.title)
+        setQuizPassword(quizToEdit.password || '')
         setQuestions(quizToEdit.questions || [])
       }
     }
-  }, [editQuizId, quizzes])
+  }, [editQuizId, quizzes, navigate])
 
   const handleExportQuizzes = () => {
     const dataStr = JSON.stringify(quizzes, null, 2)
@@ -172,6 +184,7 @@ function CreateQuiz() {
       const quiz = {
         id: quizId,
         title: quizTitle,
+        password: quizPassword || undefined, // Nur speichern wenn gesetzt
         questions: questions,
         createdAt: savedQuizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -186,6 +199,7 @@ function CreateQuiz() {
       const quiz = {
         id: Date.now().toString(),
         title: quizTitle,
+        password: quizPassword || undefined, // Nur speichern wenn gesetzt
         questions: questions,
         createdAt: new Date().toISOString()
       }
@@ -241,6 +255,18 @@ function CreateQuiz() {
                 value={quizTitle}
                 onChange={(e) => setQuizTitle(e.target.value)}
               />
+            </label>
+            <label>
+              <h3>Passwort (Optional) 🔒</h3>
+              <input
+                type="password"
+                placeholder="Leer lassen für kein Passwort..."
+                value={quizPassword}
+                onChange={(e) => setQuizPassword(e.target.value)}
+              />
+              <small style={{ color: '#64748b', fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                Mit einem Passwort können nur Personen mit dem Passwort dieses Quiz bearbeiten oder starten.
+              </small>
             </label>
             <div className="quiz-stats">
               <div className="stat-item">
