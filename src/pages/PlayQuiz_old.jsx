@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock } from 'lucide-react'
-import socket from '../socket'
 import './PlayQuiz.css'
 
 function PlayQuiz() {
@@ -15,101 +14,30 @@ function PlayQuiz() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [buzzerActive, setBuzzerActive] = useState(false)
   const [buzzerPressed, setBuzzerPressed] = useState(false)
-  const [answerResult, setAnswerResult] = useState(null)
 
   useEffect(() => {
     // Load player info
     const stored = localStorage.getItem('playerInfo')
-    if (!stored) {
+    if (stored) {
+      setPlayerInfo(JSON.parse(stored))
+    } else {
       navigate('/join')
-      return
     }
 
-    const info = JSON.parse(stored)
-    setPlayerInfo(info)
-
-    // Connect socket
-    socket.connect()
-
-    // Join room
-    socket.emit('join-room', {
-      roomCode: info.joinCode,
-      playerName: info.name,
-      playerAvatar: info.avatar
-    })
-
-    // Socket event listeners
-    socket.on('room-state', (data) => {
-      console.log('Room state:', data)
-      setGameState(data.state)
-    })
-
-    socket.on('player-joined', (data) => {
-      console.log('Player joined notification:', data)
-    })
-
-    socket.on('game-started', (data) => {
-      console.log('Game started:', data)
+    // Simulate game flow for demo
+    setTimeout(() => {
       setGameState('question')
-      setCurrentQuestion(data.question)
-      setTimeLeft(data.question.timeLimit)
-      setSelectedAnswer(null)
-      setAnswerResult(null)
-      setBuzzerActive(data.question.type === 'buzzer')
-    })
-
-    socket.on('next-question', (data) => {
-      console.log('Next question:', data)
-      setGameState('question')
-      setCurrentQuestion(data.question)
-      setTimeLeft(data.question.timeLimit)
-      setSelectedAnswer(null)
-      setAnswerResult(null)
-      setBuzzerActive(data.question.type === 'buzzer')
-    })
-
-    socket.on('answer-result', (data) => {
-      console.log('Answer result:', data)
-      setAnswerResult(data)
-      setScore(data.newScore)
-      setGameState('answered')
-    })
-
-    socket.on('show-results', (data) => {
-      console.log('Show results:', data)
-      setGameState('results')
-    })
-
-    socket.on('game-over', (data) => {
-      console.log('Game over:', data)
-      setGameState('final')
-    })
-
-    socket.on('host-disconnected', () => {
-      alert('Host hat die Verbindung getrennt. Spiel beendet.')
-      navigate('/')
-    })
-
-    socket.on('error', (data) => {
-      console.error('Socket error:', data)
-      alert(data.message || 'Ein Fehler ist aufgetreten')
-      navigate('/join')
-    })
-
-    // Cleanup
-    return () => {
-      socket.off('room-state')
-      socket.off('player-joined')
-      socket.off('game-started')
-      socket.off('next-question')
-      socket.off('answer-result')
-      socket.off('show-results')
-      socket.off('game-over')
-      socket.off('host-disconnected')
-      socket.off('error')
-      socket.disconnect()
-    }
-  }, [navigate, quizId])
+      setCurrentQuestion({
+        type: 'multiple',
+        question: 'Was ist die Hauptstadt von Deutschland?',
+        answers: ['Berlin', 'München', 'Hamburg', 'Köln'],
+        correctAnswer: 0,
+        points: 100,
+        timeLimit: 30
+      })
+      setTimeLeft(30)
+    }, 3000)
+  }, [navigate])
 
   useEffect(() => {
     if (gameState === 'question' && timeLeft > 0) {
@@ -122,24 +50,22 @@ function PlayQuiz() {
     if (selectedAnswer !== null) return
 
     setSelectedAnswer(index)
+    setGameState('answered')
 
-    // Send answer to server
-    socket.emit('submit-answer', {
-      roomCode: playerInfo.joinCode,
-      answer: index
-    })
+    // Simulate answer check
+    if (index === currentQuestion.correctAnswer) {
+      setScore(score + currentQuestion.points)
+    }
+
+    setTimeout(() => {
+      setGameState('results')
+    }, 2000)
   }
 
   const handleBuzzer = () => {
     if (!buzzerActive || buzzerPressed) return
 
     setBuzzerPressed(true)
-
-    // Send buzzer press to server
-    socket.emit('buzzer-press', {
-      roomCode: playerInfo.joinCode
-    })
-
     // Create buzzer effect
     if (navigator.vibrate) {
       navigator.vibrate(200)
@@ -256,24 +182,22 @@ function PlayQuiz() {
         </div>
       )}
 
-      {gameState === 'answered' && answerResult && (
+      {gameState === 'answered' && (
         <div className="answered-screen">
           <div className="answered-content animate-fadeIn">
-            {answerResult.correct ? (
+            {selectedAnswer === currentQuestion.correctAnswer ? (
               <>
                 <div className="result-icon success">✓</div>
                 <h2 className="result-title success">Richtig!</h2>
-                <p className="result-points">+{answerResult.points} Punkte</p>
+                <p className="result-points">+{currentQuestion.points} Punkte</p>
               </>
             ) : (
               <>
                 <div className="result-icon error">✗</div>
                 <h2 className="result-title error">Leider falsch</h2>
-                {currentQuestion && currentQuestion.answers && (
-                  <p className="result-correct">
-                    Richtige Antwort: {currentQuestion.answers[answerResult.correctAnswer]}
-                  </p>
-                )}
+                <p className="result-correct">
+                  Richtige Antwort: {currentQuestion.answers[currentQuestion.correctAnswer]}
+                </p>
               </>
             )}
           </div>

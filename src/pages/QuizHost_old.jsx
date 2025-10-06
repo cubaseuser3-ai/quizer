@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Users, Play, SkipForward, Trophy, Copy, Check } from 'lucide-react'
-import socket from '../socket'
 import './QuizHost.css'
 
 function QuizHost() {
@@ -14,7 +13,6 @@ function QuizHost() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [showAnswers, setShowAnswers] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [roomCode, setRoomCode] = useState('')
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -29,58 +27,9 @@ function QuizHost() {
     } else {
       alert('Quiz nicht gefunden')
       navigate('/')
-      return
     }
 
-    // Connect socket
-    socket.connect()
-
-    // Create room
-    socket.emit('create-room', {
-      quizId,
-      quizData: foundQuiz
-    })
-
-    // Socket event listeners
-    socket.on('room-created', (data) => {
-      setRoomCode(data.roomCode)
-      console.log('Room created:', data.roomCode)
-    })
-
-    socket.on('player-joined', (data) => {
-      console.log('Player joined:', data.player)
-      setPlayers(data.players)
-    })
-
-    socket.on('player-left', (data) => {
-      console.log('Player left:', data.playerName)
-      setPlayers(data.players)
-    })
-
-    socket.on('player-answered', (data) => {
-      console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗')
-      // Update player list with answer status
-      setPlayers(prev => prev.map(p =>
-        p.id === data.playerId
-          ? { ...p, hasAnswered: true, correct: data.correct }
-          : p
-      ))
-    })
-
-    socket.on('buzzer-pressed', (data) => {
-      console.log('Buzzer pressed by:', data.playerName)
-      alert(`🔔 ${data.playerName} hat gebuzzert!`)
-    })
-
-    // Cleanup
-    return () => {
-      socket.off('room-created')
-      socket.off('player-joined')
-      socket.off('player-left')
-      socket.off('player-answered')
-      socket.off('buzzer-pressed')
-      socket.disconnect()
-    }
+    // TODO: Socket.io Integration - Spieler werden über WebSocket hinzugefügt
   }, [quizId, navigate])
 
   useEffect(() => {
@@ -107,9 +56,6 @@ function QuizHost() {
     const question = quiz.questions[currentQuestionIndex]
     setTimeLeft(question.timeLimit)
     setShowAnswers(false)
-
-    // Emit game start to all players
-    socket.emit('start-game', { roomCode: joinCode })
   }
 
   const nextQuestion = () => {
@@ -119,24 +65,16 @@ function QuizHost() {
       const question = quiz.questions[currentQuestionIndex + 1]
       setTimeLeft(question.timeLimit)
       setShowAnswers(false)
-
-      // Reset player answer status
-      setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false })))
-
-      // Emit next question
-      socket.emit('next-question', { roomCode: joinCode })
     } else {
       setGameState('final')
-      // Game over - show results
-      socket.emit('show-results', { roomCode: joinCode })
     }
   }
 
   const showResults = () => {
     setShowAnswers(true)
+    // TODO: Socket.io Integration - Punkte werden vom Server aktualisiert
     setTimeout(() => {
       setGameState('results')
-      socket.emit('show-results', { roomCode: joinCode })
     }, 3000)
   }
 
