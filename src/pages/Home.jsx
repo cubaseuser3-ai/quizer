@@ -107,20 +107,22 @@ function Home() {
               <h1>Quizer</h1>
             </div>
             <div className="nav-buttons">
+              <button className="btn btn-outline" onClick={() => navigate('/join')}>
+                Quiz beitreten
+              </button>
               {quizzes.length > 0 && (
                 <>
-                  <button className="btn btn-outline" onClick={handleExportQuizzes} title="Quiz herunterladen">
+                  <button className="btn btn-secondary" onClick={handleExportQuizzes} title="Quiz herunterladen">
                     <Download size={20} />
+                    Download
                   </button>
-                  <label className="btn btn-outline" title="Quiz hochladen">
+                  <label className="btn btn-secondary" title="Quiz hochladen" style={{ cursor: 'pointer' }}>
                     <Upload size={20} />
+                    Upload
                     <input type="file" accept=".json" onChange={handleImportQuizzes} style={{ display: 'none' }} />
                   </label>
                 </>
               )}
-              <button className="btn btn-outline" onClick={() => navigate('/join')}>
-                Quiz beitreten
-              </button>
               <button className="btn btn-primary" onClick={() => navigate('/create')}>
                 <Plus size={20} />
                 Quiz erstellen

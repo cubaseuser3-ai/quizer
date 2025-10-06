@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, ArrowLeft, Save, Play, X } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload } from 'lucide-react'
 import './CreateQuiz.css'
 
 function CreateQuiz() {
@@ -9,6 +9,48 @@ function CreateQuiz() {
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
+  const [quizzes, setQuizzes] = useState(() => {
+    return JSON.parse(localStorage.getItem('quizzes') || '[]')
+  })
+
+  const handleExportQuizzes = () => {
+    const dataStr = JSON.stringify(quizzes, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `quizer-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportQuizzes = (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const importedQuizzes = JSON.parse(e.target.result)
+        if (!Array.isArray(importedQuizzes)) {
+          alert('❌ Ungültiges Dateiformat!')
+          return
+        }
+
+        const existingQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
+        const mergedQuizzes = [...existingQuizzes, ...importedQuizzes]
+        localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes))
+        setQuizzes(mergedQuizzes)
+        alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich importiert!`)
+      } catch (error) {
+        alert('❌ Fehler beim Importieren der Datei!')
+        console.error(error)
+      }
+    }
+    reader.readAsText(file)
+  }
 
   const questionTypes = [
     { id: 'multiple', name: 'Multiple Choice', icon: '☑️' },
@@ -111,10 +153,25 @@ function CreateQuiz() {
               Zurück
             </button>
             <h1>Quiz erstellen</h1>
-            <button className="btn btn-success" onClick={saveQuiz} disabled={questions.length === 0}>
-              <Save size={20} />
-              Speichern & Starten
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {quizzes.length > 0 && (
+                <>
+                  <button className="btn btn-secondary" onClick={handleExportQuizzes} title="Quiz herunterladen">
+                    <Download size={20} />
+                    Download
+                  </button>
+                  <label className="btn btn-secondary" title="Quiz hochladen" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={20} />
+                    Upload
+                    <input type="file" accept=".json" onChange={handleImportQuizzes} style={{ display: 'none' }} />
+                  </label>
+                </>
+              )}
+              <button className="btn btn-success" onClick={saveQuiz} disabled={questions.length === 0}>
+                <Save size={20} />
+                Speichern & Starten
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -207,8 +264,8 @@ function CreateQuiz() {
 
       {/* Question Modal */}
       {showQuestionModal && (
-        <div className="modal-overlay" onClick={() => setShowQuestionModal(false)}>
-          <div className="modal-content card" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal-content card">
             <div className="modal-header">
               <h2>{editingQuestion !== null ? 'Frage bearbeiten' : 'Neue Frage'}</h2>
               <button className="btn-icon" onClick={() => setShowQuestionModal(false)}>
