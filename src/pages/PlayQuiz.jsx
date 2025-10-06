@@ -92,7 +92,16 @@ function PlayQuiz() {
 
     socket.on('error', (data) => {
       console.error('Socket error:', data)
-      alert(data.message || 'Ein Fehler ist aufgetreten')
+      const errorMsg = data.message || 'Ein Fehler ist aufgetreten'
+
+      if (errorMsg.includes('Room not found')) {
+        alert('❌ Quiz-Raum nicht gefunden!\n\nBitte überprüfe:\n- Ist der Raum-Code korrekt?\n- Hat der Host das Quiz gestartet?\n- Läuft das Backend auf Render.com?')
+      } else {
+        alert(`❌ Fehler: ${errorMsg}`)
+      }
+
+      // Clear playerInfo and redirect
+      localStorage.removeItem('playerInfo')
       navigate('/join')
     })
 
@@ -174,8 +183,16 @@ function PlayQuiz() {
             <div className="pulse-ring">
               <Clock size={64} />
             </div>
-            <h2>Warte auf den Spielstart...</h2>
-            <p>Der Host startet das Quiz in Kürze</p>
+            <h2>✅ Erfolgreich beigetreten!</h2>
+            <p className="waiting-message">
+              Du bist jetzt im Raum <strong>{playerInfo.joinCode}</strong>
+            </p>
+            <div className="waiting-info">
+              <p>⏳ Warte darauf, dass der Host das Quiz startet...</p>
+              <p style={{ fontSize: '0.9em', opacity: 0.7, marginTop: '1em' }}>
+                Halte dein Gerät bereit!
+              </p>
+            </div>
             <div className="waiting-dots">
               <div className="dot"></div>
               <div className="dot"></div>

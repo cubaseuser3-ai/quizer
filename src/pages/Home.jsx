@@ -1,9 +1,52 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe } from 'lucide-react'
+import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload } from 'lucide-react'
 import './Home.css'
 
 function Home() {
   const navigate = useNavigate()
+  const [quizzes, setQuizzes] = useState(() => {
+    return JSON.parse(localStorage.getItem('quizzes') || '[]')
+  })
+
+  const handleExportQuizzes = () => {
+    const dataStr = JSON.stringify(quizzes, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `quizer-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportQuizzes = (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const importedQuizzes = JSON.parse(e.target.result)
+        if (!Array.isArray(importedQuizzes)) {
+          alert('❌ Ungültiges Dateiformat!')
+          return
+        }
+
+        const existingQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
+        const mergedQuizzes = [...existingQuizzes, ...importedQuizzes]
+        localStorage.setItem('quizzes', JSON.stringify(mergedQuizzes))
+        setQuizzes(mergedQuizzes)
+        alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich importiert!`)
+      } catch (error) {
+        alert('❌ Fehler beim Importieren der Datei!')
+        console.error(error)
+      }
+    }
+    reader.readAsText(file)
+  }
 
   const features = [
     {
@@ -64,6 +107,17 @@ function Home() {
               <h1>Quizer</h1>
             </div>
             <div className="nav-buttons">
+              {quizzes.length > 0 && (
+                <>
+                  <button className="btn btn-outline" onClick={handleExportQuizzes} title="Quiz herunterladen">
+                    <Download size={20} />
+                  </button>
+                  <label className="btn btn-outline" title="Quiz hochladen">
+                    <Upload size={20} />
+                    <input type="file" accept=".json" onChange={handleImportQuizzes} style={{ display: 'none' }} />
+                  </label>
+                </>
+              )}
               <button className="btn btn-outline" onClick={() => navigate('/join')}>
                 Quiz beitreten
               </button>

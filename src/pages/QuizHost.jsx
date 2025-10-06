@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Users, Play, SkipForward, Trophy, Copy, Check } from 'lucide-react'
+import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X } from 'lucide-react'
 import socket from '../socket'
 import './QuizHost.css'
 
@@ -140,6 +140,25 @@ function QuizHost() {
     }, 3000)
   }
 
+  const handleRestartQuiz = () => {
+    if (window.confirm('🔄 Quiz neu starten?\n\nAlle Punkte werden zurückgesetzt und das Quiz beginnt von vorne.')) {
+      setGameState('lobby')
+      setCurrentQuestionIndex(0)
+      setPlayers(players.map(p => ({ ...p, score: 0, hasAnswered: false, correct: false })))
+      setTimeLeft(0)
+      setShowAnswers(false)
+      // Notify players
+      socket.emit('game-restarted', { roomCode: joinCode })
+    }
+  }
+
+  const handleEndQuiz = () => {
+    if (window.confirm('❌ Quiz beenden?\n\nDas Quiz wird beendet und alle Spieler werden getrennt.')) {
+      socket.disconnect()
+      navigate('/')
+    }
+  }
+
   if (!quiz) {
     return <div className="loading">Lade Quiz...</div>
   }
@@ -152,6 +171,10 @@ function QuizHost() {
       {gameState === 'lobby' && (
         <div className="lobby">
           <div className="lobby-content">
+            <button className="btn btn-outline" onClick={handleEndQuiz} style={{ position: 'absolute', top: '20px', right: '20px' }}>
+              <X size={20} />
+              Beenden
+            </button>
             <h1 className="quiz-title animate-fadeIn">{quiz.title}</h1>
 
             <div className="join-info card animate-fadeIn">
@@ -329,15 +352,13 @@ function QuizHost() {
             </div>
 
             <div className="final-actions">
-              <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
-                Neues Quiz
-              </button>
-              <button className="btn btn-outline btn-lg" onClick={() => {
-                setGameState('lobby')
-                setCurrentQuestionIndex(0)
-                setPlayers(players.map(p => ({ ...p, score: 0 })))
-              }}>
+              <button className="btn btn-outline btn-lg" onClick={handleRestartQuiz}>
+                <RotateCcw size={20} />
                 Nochmal spielen
+              </button>
+              <button className="btn btn-primary btn-lg" onClick={handleEndQuiz}>
+                <X size={20} />
+                Quiz beenden
               </button>
             </div>
           </div>
