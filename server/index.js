@@ -182,6 +182,31 @@ io.on('connection', (socket) => {
     console.log(`Buzzer pressed by ${player.name} in room ${roomCode}`)
   })
 
+  // Award buzzer points (host only)
+  socket.on('award-buzzer-points', (data) => {
+    const { roomCode, playerId, points } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room || room.host !== socket.id) {
+      socket.emit('error', { message: 'Unauthorized' })
+      return
+    }
+
+    const player = room.players.find(p => p.id === playerId)
+    if (!player) return
+
+    // Award points to player
+    player.score += points
+
+    // Notify the player about their points
+    io.to(playerId).emit('buzzer-points-awarded', {
+      points: points,
+      newScore: player.score
+    })
+
+    console.log(`${points} points awarded to ${player.name} in room ${roomCode}`)
+  })
+
   // Host shows results
   socket.on('show-results', (data) => {
     const { roomCode } = data

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Zap, Trophy, Clock } from 'lucide-react'
+import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import socket from '../socket'
 import './PlayQuiz.css'
 
@@ -8,7 +8,7 @@ function PlayQuiz() {
   const { quizId } = useParams()
   const navigate = useNavigate()
   const [playerInfo, setPlayerInfo] = useState(null)
-  const [gameState, setGameState] = useState('waiting') // waiting, question, answered, results, final
+  const [gameState, setGameState] = useState('waiting') // waiting, question, answered, results, final, error
   const [currentQuestion, setCurrentQuestion] = useState(null)
   const [selectedAnswer, setSelectedAnswer] = useState(null)
   const [score, setScore] = useState(0)
@@ -16,6 +16,7 @@ function PlayQuiz() {
   const [buzzerActive, setBuzzerActive] = useState(false)
   const [buzzerPressed, setBuzzerPressed] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
 
   useEffect(() => {
     // Load player info
@@ -41,7 +42,16 @@ function PlayQuiz() {
     // Socket event listeners
     socket.on('room-state', (data) => {
       console.log('Room state:', data)
-      setGameState(data.state)
+      // Map backend states to frontend states
+      if (data.state === 'lobby') {
+        setGameState('waiting')
+      } else if (data.state === 'question') {
+        setGameState('question')
+      } else if (data.state === 'final') {
+        setGameState('final')
+      } else {
+        setGameState(data.state)
+      }
     })
 
     socket.on('player-joined', (data) => {
@@ -85,6 +95,18 @@ function PlayQuiz() {
       setGameState('final')
     })
 
+    socket.on('buzzer-points-awarded', (data) => {
+      console.log('Buzzer points awarded:', data)
+      setScore(data.newScore)
+      // Show success notification
+      setAnswerResult({
+        correct: true,
+        points: data.points,
+        correctAnswer: null
+      })
+      setGameState('answered')
+    })
+
     socket.on('host-disconnected', () => {
       alert('Host hat die Verbindung getrennt. Spiel beendet.')
       navigate('/')
@@ -94,15 +116,15 @@ function PlayQuiz() {
       console.error('Socket error:', data)
       const errorMsg = data.message || 'Ein Fehler ist aufgetreten'
 
+      let userMessage = ''
       if (errorMsg.includes('Room not found')) {
-        alert('❌ Quiz-Raum nicht gefunden!\n\nBitte überprüfe:\n- Ist der Raum-Code korrekt?\n- Hat der Host das Quiz gestartet?\n- Läuft das Backend auf Render.com?')
+        userMessage = 'Quiz-Raum wurde nicht gefunden. Möglicherweise wurde das Quiz noch nicht gestartet oder das Backend wurde neu gestartet.'
       } else {
-        alert(`❌ Fehler: ${errorMsg}`)
+        userMessage = errorMsg
       }
 
-      // Clear playerInfo and redirect
-      localStorage.removeItem('playerInfo')
-      navigate('/join')
+      setErrorMessage(userMessage)
+      setGameState('error')
     })
 
     // Cleanup
@@ -114,6 +136,7 @@ function PlayQuiz() {
       socket.off('answer-result')
       socket.off('show-results')
       socket.off('game-over')
+      socket.off('buzzer-points-awarded')
       socket.off('host-disconnected')
       socket.off('error')
       socket.disconnect()
@@ -188,7 +211,7 @@ function PlayQuiz() {
               Du bist jetzt im Raum <strong>{playerInfo.joinCode}</strong>
             </p>
             <div className="waiting-info">
-              <p>⏳ Warte darauf, dass der Host das Quiz startet...</p>
+              <p>⏳ Bitte warte auf den Moderator bis er das Quiz startet...</p>
               <p style={{ fontSize: '0.9em', opacity: 0.7, marginTop: '1em' }}>
                 Halte dein Gerät bereit!
               </p>
@@ -325,6 +348,56 @@ function PlayQuiz() {
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
               Zurück zur Startseite
             </button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'error' && (
+        <div className="error-screen" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="error-content animate-fadeIn" style={{ maxWidth: '600px', textAlign: 'center' }}>
+            <div className="error-icon" style={{ marginBottom: '20px' }}>
+              <AlertCircle size={80} style={{ color: '#ef4444' }} />
+            </div>
+            <h2 style={{ color: 'white', marginBottom: '20px' }}>Verbindungsfehler</h2>
+            <div className="error-message card" style={{ marginBottom: '20px', padding: '20px' }}>
+              <p>{errorMessage}</p>
+            </div>
+            <div className="error-tips" style={{ marginBottom: '30px' }}>
+              <h3 style={{ color: 'white', marginBottom: '15px' }}>Was du tun kannst:</h3>
+              <ul style={{ textAlign: 'left', maxWidth: '400px', margin: '0 auto', color: 'white' }}>
+                <li style={{ marginBottom: '10px' }}>Überprüfe den Raum-Code: <strong>{playerInfo?.joinCode}</strong></li>
+                <li style={{ marginBottom: '10px' }}>Stelle sicher, dass der Host das Quiz gestartet hat</li>
+                <li style={{ marginBottom: '10px' }}>Das Backend könnte neu gestartet sein - bitte Host das Quiz neu starten lassen</li>
+              </ul>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setGameState('waiting')
+                  setErrorMessage(null)
+                  socket.connect()
+                  socket.emit('join-room', {
+                    roomCode: playerInfo.joinCode,
+                    playerName: playerInfo.name,
+                    playerAvatar: playerInfo.avatar
+                  })
+                }}
+              >
+                <RefreshCw size={20} />
+                Erneut versuchen
+              </button>
+              <button
+                className="btn"
+                onClick={() => {
+                  localStorage.removeItem('playerInfo')
+                  navigate('/join')
+                }}
+                style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white', border: '2px solid white' }}
+              >
+                Zurück zum Beitritt
+              </button>
+            </div>
           </div>
         </div>
       )}

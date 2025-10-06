@@ -15,6 +15,7 @@ function QuizHost() {
   const [showAnswers, setShowAnswers] = useState(false)
   const [copied, setCopied] = useState(false)
   const [roomCode, setRoomCode] = useState('')
+  const [buzzerPresses, setBuzzerPresses] = useState([])
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -69,7 +70,12 @@ function QuizHost() {
 
     socket.on('buzzer-pressed', (data) => {
       console.log('Buzzer pressed by:', data.playerName)
-      alert(`🔔 ${data.playerName} hat gebuzzert!`)
+      setBuzzerPresses(prev => [...prev, {
+        playerId: data.playerId,
+        playerName: data.playerName,
+        playerAvatar: data.playerAvatar,
+        timestamp: data.timestamp
+      }])
     })
 
     // Cleanup
@@ -107,6 +113,7 @@ function QuizHost() {
     const question = quiz.questions[currentQuestionIndex]
     setTimeLeft(question.timeLimit)
     setShowAnswers(false)
+    setBuzzerPresses([]) // Reset buzzer presses
 
     // Emit game start to all players
     socket.emit('start-game', { roomCode: joinCode })
@@ -119,6 +126,7 @@ function QuizHost() {
       const question = quiz.questions[currentQuestionIndex + 1]
       setTimeLeft(question.timeLimit)
       setShowAnswers(false)
+      setBuzzerPresses([]) // Reset buzzer presses
 
       // Reset player answer status
       setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false })))
@@ -157,6 +165,27 @@ function QuizHost() {
       socket.disconnect()
       navigate('/')
     }
+  }
+
+  const awardPoints = (playerId, playerName) => {
+    const points = currentQuestion.points
+
+    // Send to backend to update player score
+    socket.emit('award-buzzer-points', {
+      roomCode: joinCode,
+      playerId: playerId,
+      points: points
+    })
+
+    // Update local players state
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId ? { ...p, score: (p.score || 0) + points } : p
+    ))
+
+    alert(`✅ ${playerName} erhält ${points} Punkte!`)
+
+    // Remove this player from buzzer list or mark as awarded
+    setBuzzerPresses(prev => prev.filter(bp => bp.playerId !== playerId))
   }
 
   if (!quiz) {
@@ -281,6 +310,37 @@ function QuizHost() {
                   <span className="tf-icon">✗</span>
                   <span className="tf-text">Falsch</span>
                 </div>
+              </div>
+            )}
+
+            {currentQuestion.type === 'buzzer' && (
+              <div className="buzzer-list">
+                <h3>Spieler die gebuzzert haben:</h3>
+                {buzzerPresses.length === 0 ? (
+                  <div className="empty-buzzer">
+                    <p>Warte darauf, dass Spieler den Buzzer drücken...</p>
+                    <div className="pulse-dot"></div>
+                  </div>
+                ) : (
+                  <div className="buzzer-players">
+                    {buzzerPresses.map((press, index) => (
+                      <div key={press.playerId} className="buzzer-player-card" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <div className="buzzer-rank">#{index + 1}</div>
+                        <div className="buzzer-player-info">
+                          <span className="player-avatar">{press.playerAvatar}</span>
+                          <span className="player-name">{press.playerName}</span>
+                        </div>
+                        <button
+                          className="btn btn-success"
+                          onClick={() => awardPoints(press.playerId, press.playerName)}
+                        >
+                          <Trophy size={18} />
+                          {currentQuestion.points} Punkte geben
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
