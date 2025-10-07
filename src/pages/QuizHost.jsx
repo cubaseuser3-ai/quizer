@@ -240,10 +240,12 @@ function QuizHost() {
     if (!selectedPlayer) return
 
     const points = parseInt(pointsToAdd)
-    if (isNaN(points)) {
-      alert('Bitte eine gültige Zahl eingeben')
+    if (isNaN(points) || points === 0) {
+      alert('Bitte eine gültige Zahl eingeben (nicht 0)')
       return
     }
+
+    console.log('Adjusting points:', points, 'for player:', selectedPlayer.name)
 
     // Update lokal
     setPlayers(prev => prev.map(p =>
@@ -818,7 +820,7 @@ function QuizHost() {
               <input
                 type="number"
                 value={pointsToAdd}
-                onChange={(e) => setPointsToAdd(e.target.value)}
+                onChange={(e) => setPointsToAdd(Number(e.target.value))}
                 placeholder="z.B. 100 oder -50"
                 autoFocus
               />
