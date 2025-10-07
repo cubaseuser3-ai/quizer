@@ -298,7 +298,8 @@ io.on('connection', (socket) => {
         question: question.question,
         answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
         timeLimit: question.timeLimit,
-        points: question.points
+        points: question.points,
+        image: question.image
       },
       questionIndex: 0,
       totalQuestions: room.quiz.questions.length
@@ -468,7 +469,8 @@ io.on('connection', (socket) => {
           question: question.question,
           answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
           timeLimit: question.timeLimit,
-          points: question.points
+          points: question.points,
+          image: question.image
         },
         questionIndex: room.currentQuestion,
         totalQuestions: room.quiz.questions.length

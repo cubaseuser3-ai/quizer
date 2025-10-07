@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import ZoomControls from '../components/ZoomControls'
@@ -23,6 +23,7 @@ function PlayQuiz() {
   const [currentRank, setCurrentRank] = useState(null)
   const [totalPlayers, setTotalPlayers] = useState(0)
   const [pointsNotification, setPointsNotification] = useState(null)
+  const scoreRef = useRef(0)
 
   useEffect(() => {
     // Load player info
@@ -126,6 +127,7 @@ function PlayQuiz() {
       console.log('Answer result:', data)
       setAnswerResult(data)
       setScore(data.newScore)
+      scoreRef.current = data.newScore
       setGameState('answered')
     })
 
@@ -136,6 +138,17 @@ function PlayQuiz() {
 
     socket.on('game-over', (data) => {
       console.log('Game over:', data)
+      // Berechne eigenen Rang aus den Spielern
+      if (data.players) {
+        const myRank = data.players.findIndex(p => p.id === socket.id) + 1
+        setCurrentRank(myRank)
+        setTotalPlayers(data.players.length)
+        const me = data.players.find(p => p.id === socket.id)
+        if (me) {
+          setScore(me.score)
+          scoreRef.current = me.score
+        }
+      }
       setGameState('final')
     })
 
@@ -167,8 +180,9 @@ function PlayQuiz() {
     socket.on('player-score-updated', (data) => {
       console.log('Score updated:', data)
       if (data.playerId === socket.id) {
-        const oldScore = score
+        const oldScore = scoreRef.current
         setScore(data.newScore)
+        scoreRef.current = data.newScore
         const diff = data.newScore - oldScore
         // Zeige Benachrichtigung
         setPointsNotification({
@@ -565,8 +579,18 @@ function PlayQuiz() {
                  '👏 Großartige Leistung!'}
               </p>
             </div>
-            <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
-              Zurück zur Startseite
+            <button
+              className="btn btn-success btn-lg"
+              onClick={() => navigate('/')}
+              style={{
+                padding: '18px 56px',
+                fontSize: '22px',
+                fontWeight: '800',
+                boxShadow: '0 10px 30px rgba(16, 185, 129, 0.5)',
+                marginTop: '20px'
+              }}
+            >
+              ✨ Zur Startseite
             </button>
           </div>
         </div>
