@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload, Edit, Trash2, Copy } from 'lucide-react'
+import ZoomControls from '../components/ZoomControls'
 import './Home.css'
 import { getQuizzes, saveQuiz, deleteQuiz, importQuizzes } from '../utils/quizStorage'
 
@@ -265,6 +266,8 @@ function Home() {
           </div>
         </div>
       </footer>
+
+      <ZoomControls />
     </div>
   )
 }

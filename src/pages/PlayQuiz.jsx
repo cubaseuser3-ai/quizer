@@ -68,6 +68,8 @@ function PlayQuiz() {
           setGameState('question')
           setTimeLeft(data.question.timeLimit)
           setBuzzerActive(data.question.type === 'buzzer')
+          setBuzzerLocked(false) // Buzzer entsperren nach Reload
+          setBuzzerPressed(false)
           setQuestionStartTime(Date.now())
         }
       }

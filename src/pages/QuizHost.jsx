@@ -27,6 +27,7 @@ function QuizHost() {
   const [previousRankings, setPreviousRankings] = useState([])
   const [buzzerEnabled, setBuzzerEnabled] = useState(true)
   const [buzzerLockedPlayers, setBuzzerLockedPlayers] = useState([])
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -592,6 +593,17 @@ function QuizHost() {
                     )
                   })}
                 </div>
+
+                {/* Weiter-Button für Buzzer-Fragen */}
+                <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                  <button
+                    className="btn btn-primary btn-lg"
+                    onClick={handleNextQuestion}
+                    style={{ padding: '16px 48px', fontSize: '18px', fontWeight: '700' }}
+                  >
+                    ➡️ Nächste Frage
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -807,6 +819,10 @@ function QuizHost() {
       {/* Host-Kontroll-Buttons (immer sichtbar außer in Lobby) */}
       {gameState !== 'lobby' && (
         <div className="host-controls">
+          <button className="btn btn-success" onClick={() => setShowLeaderboardModal(true)}>
+            <Trophy size={20} />
+            Rangliste
+          </button>
           <button className="btn btn-warning" onClick={handleRestartQuiz}>
             <RotateCcw size={20} />
             Neustart
@@ -857,6 +873,68 @@ function QuizHost() {
               <button className="btn btn-primary" onClick={adjustPlayerPoints}>
                 <Check size={20} />
                 Bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rangliste-Modal */}
+      {showLeaderboardModal && (
+        <div className="points-modal-overlay" onClick={() => setShowLeaderboardModal(false)}>
+          <div className="points-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="modal-header">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+                <Trophy size={28} />
+                Aktuelle Rangliste
+              </h2>
+              <button className="btn-icon" onClick={() => setShowLeaderboardModal(false)}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[...players]
+                  .sort((a, b) => b.score - a.score)
+                  .map((player, index) => (
+                    <div
+                      key={player.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '16px',
+                        background: index === 0
+                          ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                          : index === 1
+                          ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+                          : index === 2
+                          ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                          : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        borderRadius: '12px',
+                        color: 'white',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        gap: '16px'
+                      }}
+                    >
+                      <div style={{ fontSize: '32px', fontWeight: '900', minWidth: '50px', textAlign: 'center' }}>
+                        {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                      </div>
+                      <div style={{ fontSize: '32px' }}>{player.avatar}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '18px', fontWeight: '700' }}>{player.name}</div>
+                      </div>
+                      <div style={{ fontSize: '24px', fontWeight: '900' }}>
+                        {player.score}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="btn btn-primary" onClick={() => setShowLeaderboardModal(false)}>
+                Schließen
               </button>
             </div>
           </div>

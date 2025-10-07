@@ -167,17 +167,20 @@ function CreateQuiz() {
       return
     }
 
-    // Prüfe ob alle Antworten ausgefüllt sind
-    const emptyAnswers = currentQuestion.answers.filter(a => !a.trim())
-    if (emptyAnswers.length > 0) {
-      alert('❌ Bitte fülle alle Antwortfelder aus')
-      return
-    }
+    // Nur bei Multiple Choice und True/False Antworten validieren
+    if (currentQuestion.type === 'multiple' || currentQuestion.type === 'truefalse') {
+      // Prüfe ob alle Antworten ausgefüllt sind
+      const emptyAnswers = currentQuestion.answers.filter(a => !a.trim())
+      if (emptyAnswers.length > 0) {
+        alert('❌ Bitte fülle alle Antwortfelder aus')
+        return
+      }
 
-    // Prüfe ob mindestens 2 Antworten vorhanden sind
-    if (currentQuestion.answers.length < 2) {
-      alert('❌ Mindestens 2 Antworten erforderlich')
-      return
+      // Prüfe ob mindestens 2 Antworten vorhanden sind (nur bei Multiple Choice)
+      if (currentQuestion.type === 'multiple' && currentQuestion.answers.length < 2) {
+        alert('❌ Mindestens 2 Antworten erforderlich')
+        return
+      }
     }
 
     if (editingQuestion !== null) {
