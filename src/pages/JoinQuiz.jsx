@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LogIn, ArrowLeft } from 'lucide-react'
+import ZoomControls from '../components/ZoomControls'
 import './JoinQuiz.css'
 
 function JoinQuiz() {
@@ -121,6 +122,8 @@ function JoinQuiz() {
           </div>
         </div>
       </div>
+
+      <ZoomControls />
     </div>
   )
 }

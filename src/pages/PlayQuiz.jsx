@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
+import ZoomControls from '../components/ZoomControls'
 import socket from '../socket'
 import './PlayQuiz.css'
 
@@ -620,6 +621,8 @@ function PlayQuiz() {
           </div>
         </div>
       )}
+
+      <ZoomControls />
     </div>
   )
 }
