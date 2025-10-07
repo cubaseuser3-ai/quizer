@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload, Image as ImageIcon, Copy } from 'lucide-react'
 import './CreateQuiz.css'
 import { getQuizzes, getQuizById, saveQuiz, importQuizzes } from '../utils/quizStorage'
 
@@ -259,6 +259,38 @@ function CreateQuiz() {
     })
   }
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      alert('❌ Bitte wähle eine Bilddatei aus')
+      return
+    }
+
+    const maxSize = 2 * 1024 * 1024 // 2MB
+    if (file.size > maxSize) {
+      alert('❌ Bild ist zu groß! Maximale Größe: 2MB')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setCurrentQuestion({
+        ...currentQuestion,
+        image: event.target.result
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeImage = () => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      image: ''
+    })
+  }
+
   const saveQuizData = async () => {
     if (!quizTitle.trim()) {
       alert('Bitte gib einen Quiz-Titel ein')
@@ -494,6 +526,20 @@ function CreateQuiz() {
                     </div>
                     <div className="question-content">
                       <h4>{q.question}</h4>
+                      {q.image && (
+                        <img
+                          src={q.image}
+                          alt="Question"
+                          style={{
+                            maxWidth: '200px',
+                            maxHeight: '150px',
+                            borderRadius: '8px',
+                            marginTop: '8px',
+                            marginBottom: '8px',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                          }}
+                        />
+                      )}
                       {q.type === 'multiple' && (
                         <div className="answer-preview">
                           {q.answers.map((ans, i) => (
@@ -551,6 +597,72 @@ function CreateQuiz() {
                   onChange={(e) => setCurrentQuestion({ ...currentQuestion, question: e.target.value })}
                 />
               </label>
+
+              <div style={{ marginBottom: '24px' }}>
+                <h4 style={{ marginBottom: '12px' }}>Bild (optional) 🖼️</h4>
+                {currentQuestion.image ? (
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img
+                      src={currentQuestion.image}
+                      alt="Preview"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '300px',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-danger btn-sm"
+                      onClick={removeImage}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        padding: '8px 12px'
+                      }}
+                    >
+                      <X size={16} />
+                      Entfernen
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    style={{
+                      display: 'inline-block',
+                      padding: '20px 32px',
+                      background: 'rgba(99, 102, 241, 0.05)',
+                      border: '2px dashed var(--primary)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      textAlign: 'center'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)'
+                      e.currentTarget.style.borderColor = 'var(--primary)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'
+                    }}
+                  >
+                    <ImageIcon size={32} style={{ display: 'block', margin: '0 auto 8px', color: 'var(--primary)' }} />
+                    <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--primary)' }}>
+                      Bild hochladen
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+                <small style={{ display: 'block', color: '#64748b', fontSize: '13px', marginTop: '8px' }}>
+                  Maximal 2MB • JPG, PNG, GIF, WebP
+                </small>
+              </div>
 
               {currentQuestion.type === 'multiple' && (
                 <div className="answers-section">

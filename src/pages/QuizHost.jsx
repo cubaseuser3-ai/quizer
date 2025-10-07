@@ -482,6 +482,22 @@ function QuizHost() {
           <div className="question-content card animate-fadeIn">
             <h2 className="question-text">{currentQuestion.question}</h2>
 
+            {currentQuestion.image && (
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <img
+                  src={currentQuestion.image}
+                  alt="Question"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '400px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+            )}
+
             {currentQuestion.type === 'multiple' && (
               <div className="answers-grid">
                 {currentQuestion.answers.map((answer, index) => (

@@ -47,14 +47,44 @@ function PlayQuiz() {
     // Socket event listeners
     socket.on('room-state', (data) => {
       console.log('Room state:', data)
+
+      // Handle reconnection
+      if (data.reconnected) {
+        // Find our player and restore score
+        const me = data.players.find(p => p.name === info.name)
+        if (me) {
+          setScore(me.score)
+        }
+
+        // Calculate rank
+        const sortedPlayers = [...data.players].sort((a, b) => b.score - a.score)
+        const myRank = sortedPlayers.findIndex(p => p.name === info.name) + 1
+        setCurrentRank(myRank)
+        setTotalPlayers(data.players.length)
+
+        // Restore question state if game is in progress
+        if (data.question) {
+          setCurrentQuestion(data.question)
+          setGameState('question')
+          setTimeLeft(data.question.timeLimit)
+          setBuzzerActive(data.question.type === 'buzzer')
+          setQuestionStartTime(Date.now())
+        }
+      }
+
       // Map backend states to frontend states
       if (data.state === 'lobby') {
         setGameState('waiting')
-      } else if (data.state === 'question') {
-        setGameState('question')
+      } else if (data.state === 'question' && !data.reconnected) {
+        // Check if this is a late join
+        if (data.lateJoin) {
+          setGameState('late-join') // Show waiting screen for late joiners
+        } else {
+          setGameState('question')
+        }
       } else if (data.state === 'final') {
         setGameState('final')
-      } else {
+      } else if (!data.reconnected) {
         setGameState(data.state)
       }
     })
@@ -78,7 +108,7 @@ function PlayQuiz() {
 
     socket.on('next-question', (data) => {
       console.log('Next question:', data)
-      setGameState('question')
+      setGameState('question') // Late joiners will now be able to participate
       setCurrentQuestion(data.question)
       setTimeLeft(data.question.timeLimit)
       setSelectedAnswer(null)
@@ -321,6 +351,34 @@ function PlayQuiz() {
         </div>
       )}
 
+      {gameState === 'late-join' && (
+        <div className="waiting-screen">
+          <div className="waiting-content animate-fadeIn">
+            <div className="pulse-ring">
+              <Clock size={64} />
+            </div>
+            <h2>🎮 Spiel läuft bereits!</h2>
+            <p className="waiting-message">
+              Du bist dem Raum <strong>{playerInfo.joinCode}</strong> beigetreten
+            </p>
+            <div className="waiting-info">
+              <p>⏳ Das Quiz hat bereits begonnen...</p>
+              <p style={{ fontSize: '1em', fontWeight: '600', marginTop: '1.5em', color: '#6366f1' }}>
+                Du wirst bei der nächsten Frage mitspielen können!
+              </p>
+              <p style={{ fontSize: '0.9em', opacity: 0.7, marginTop: '1em' }}>
+                Bleib dran und halte dein Gerät bereit!
+              </p>
+            </div>
+            <div className="waiting-dots">
+              <div className="dot"></div>
+              <div className="dot"></div>
+              <div className="dot"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {gameState === 'question' && currentQuestion && (
         <div className="question-screen-player">
           <div className="question-timer">
@@ -333,6 +391,22 @@ function PlayQuiz() {
 
           <div className="question-card card animate-fadeIn">
             <h2 className="question-text-player">{currentQuestion.question}</h2>
+
+            {currentQuestion.image && (
+              <div style={{ textAlign: 'center', margin: '20px 0' }}>
+                <img
+                  src={currentQuestion.image}
+                  alt="Question"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '300px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+            )}
 
             {currentQuestion.type === 'multiple' && (
               <div className="answers-list">

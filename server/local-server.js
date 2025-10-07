@@ -210,31 +210,71 @@ io.on('connection', (socket) => {
       return
     }
 
-    const player = {
-      id: socket.id,
-      name: playerName,
-      avatar: playerAvatar,
-      score: 0,
-      ready: false
+    // Check if player is reconnecting (same name exists)
+    const existingPlayer = room.players.find(p => p.name === playerName)
+
+    if (existingPlayer) {
+      // Player is reconnecting - update their socket ID
+      existingPlayer.id = socket.id
+      socket.join(roomCode)
+
+      // Send current room state with their score and current question
+      const stateData = {
+        state: room.state,
+        players: room.players,
+        currentQuestion: room.currentQuestion,
+        reconnected: true
+      }
+
+      // If game is in progress, send current question data
+      if (room.state === 'question' && room.currentQuestion < room.quiz.questions.length) {
+        const question = room.quiz.questions[room.currentQuestion]
+        stateData.question = {
+          type: question.type,
+          question: question.question,
+          answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
+          timeLimit: question.timeLimit,
+          points: question.points,
+          image: question.image
+        }
+        stateData.questionIndex = room.currentQuestion
+        stateData.totalQuestions = room.quiz.questions.length
+      }
+
+      socket.emit('room-state', stateData)
+
+      console.log(`Player ${playerName} reconnected to room ${roomCode}`)
+    } else {
+      // New player joining
+      const player = {
+        id: socket.id,
+        name: playerName,
+        avatar: playerAvatar,
+        score: 0,
+        ready: false
+      }
+
+      room.players.push(player)
+      socket.join(roomCode)
+
+      // Notify all in room about new player
+      io.to(roomCode).emit('player-joined', {
+        player,
+        players: room.players
+      })
+
+      // Send current room state to new player
+      const stateData = {
+        state: room.state,
+        players: room.players,
+        currentQuestion: room.currentQuestion,
+        lateJoin: room.state === 'question' // Mark as late join if game is in progress
+      }
+
+      socket.emit('room-state', stateData)
+
+      console.log(`Player ${playerName} joined room ${roomCode}${room.state === 'question' ? ' (late join)' : ''}`)
     }
-
-    room.players.push(player)
-    socket.join(roomCode)
-
-    // Notify all in room about new player
-    io.to(roomCode).emit('player-joined', {
-      player,
-      players: room.players
-    })
-
-    // Send current room state to new player
-    socket.emit('room-state', {
-      state: room.state,
-      players: room.players,
-      currentQuestion: room.currentQuestion
-    })
-
-    console.log(`Player ${playerName} joined room ${roomCode}`)
   })
 
   // Host starts the game
