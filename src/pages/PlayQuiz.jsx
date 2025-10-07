@@ -68,6 +68,8 @@ function PlayQuiz() {
       setSelectedAnswer(null)
       setAnswerResult(null)
       setBuzzerActive(data.question.type === 'buzzer')
+      setBuzzerPressed(false) // Reset buzzer state
+      setBuzzerLocked(false) // Unlock buzzer
       setQuestionStartTime(Date.now()) // Track when question started
     })
 
@@ -79,6 +81,8 @@ function PlayQuiz() {
       setSelectedAnswer(null)
       setAnswerResult(null)
       setBuzzerActive(data.question.type === 'buzzer')
+      setBuzzerPressed(false) // Reset buzzer state
+      setBuzzerLocked(false) // Unlock buzzer
       setQuestionStartTime(Date.now()) // Track when question started
     })
 
@@ -112,8 +116,13 @@ function PlayQuiz() {
     })
 
     socket.on('buzzer-unlocked', (data) => {
-      console.log('Buzzer unlocked:', data)
+      console.log('🔓 Buzzer unlocked event received:', data)
+      console.log('Current socket.id:', socket.id)
+      console.log('Is for all?', data.playerIds === 'all')
+      console.log('Is for me?', data.playerId === socket.id)
+
       if (data.playerIds === 'all' || data.playerId === socket.id) {
+        console.log('✅ Unlocking buzzer for this player')
         setBuzzerLocked(false)
         setBuzzerPressed(false)
       }

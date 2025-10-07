@@ -145,6 +145,7 @@ function QuizHost() {
     setTimeLeft(question.timeLimit)
     setShowAnswers(false)
     setBuzzerPresses([]) // Reset buzzer presses
+    setBuzzerLockedPlayers([]) // Unlock all buzzers at start
 
     // Emit game start to all players
     socket.emit('start-game', { roomCode: joinCode })
