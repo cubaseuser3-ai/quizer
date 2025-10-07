@@ -346,6 +346,12 @@ io.on('connection', (socket) => {
         pointsAdjusted: points
       })
 
+      // Sende aktualisierte Rangliste an alle Spieler
+      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score)
+      io.to(roomCode).emit('leaderboard-update', {
+        players: sortedPlayers
+      })
+
       console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (new total: ${player.score})`)
     })
 

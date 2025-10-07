@@ -565,6 +565,24 @@ function CreateQuiz() {
                       <Plus size={16} /> Antwort hinzufügen
                     </button>
                   </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', cursor: 'pointer', padding: '12px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={currentQuestion.allowMultipleCorrect}
+                      onChange={(e) => {
+                        const allow = e.target.checked
+                        setCurrentQuestion({
+                          ...currentQuestion,
+                          allowMultipleCorrect: allow,
+                          correctAnswers: allow ? (currentQuestion.correctAnswers || [currentQuestion.correctAnswer]) : [currentQuestion.correctAnswer]
+                        })
+                      }}
+                      style={{ width: 'auto', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '15px', fontWeight: '600' }}>✅ Mehrere richtige Antworten erlauben</span>
+                  </label>
+
                   {currentQuestion.answers.map((answer, index) => (
                     <div key={index} className="answer-input" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <input
@@ -575,12 +593,27 @@ function CreateQuiz() {
                         style={{ flex: 1 }}
                       />
                       <label className="radio-label" style={{ whiteSpace: 'nowrap' }}>
-                        <input
-                          type="radio"
-                          name="correctAnswer"
-                          checked={currentQuestion.correctAnswer === index}
-                          onChange={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: index })}
-                        />
+                        {currentQuestion.allowMultipleCorrect ? (
+                          <input
+                            type="checkbox"
+                            checked={(currentQuestion.correctAnswers || []).includes(index)}
+                            onChange={(e) => {
+                              const correctAnswers = currentQuestion.correctAnswers || [currentQuestion.correctAnswer]
+                              if (e.target.checked) {
+                                setCurrentQuestion({ ...currentQuestion, correctAnswers: [...correctAnswers, index] })
+                              } else {
+                                setCurrentQuestion({ ...currentQuestion, correctAnswers: correctAnswers.filter(i => i !== index) })
+                              }
+                            }}
+                          />
+                        ) : (
+                          <input
+                            type="radio"
+                            name="correctAnswer"
+                            checked={currentQuestion.correctAnswer === index}
+                            onChange={() => setCurrentQuestion({ ...currentQuestion, correctAnswer: index, correctAnswers: [index] })}
+                          />
+                        )}
                         Richtig
                       </label>
                       {currentQuestion.answers.length > 2 && (

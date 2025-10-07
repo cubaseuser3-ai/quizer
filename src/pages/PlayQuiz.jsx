@@ -19,6 +19,9 @@ function PlayQuiz() {
   const [answerResult, setAnswerResult] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const [questionStartTime, setQuestionStartTime] = useState(null)
+  const [currentRank, setCurrentRank] = useState(null)
+  const [totalPlayers, setTotalPlayers] = useState(0)
+  const [pointsNotification, setPointsNotification] = useState(null)
 
   useEffect(() => {
     // Load player info
@@ -131,7 +134,27 @@ function PlayQuiz() {
     socket.on('player-score-updated', (data) => {
       console.log('Score updated:', data)
       if (data.playerId === socket.id) {
+        const oldScore = score
         setScore(data.newScore)
+        const diff = data.newScore - oldScore
+        // Zeige Benachrichtigung
+        setPointsNotification({
+          points: diff,
+          type: diff > 0 ? 'positive' : 'negative'
+        })
+        setTimeout(() => setPointsNotification(null), 3000)
+      }
+    })
+
+    socket.on('leaderboard-update', (data) => {
+      // Finde eigenen Rang
+      const myRank = data.players.findIndex(p => p.id === socket.id) + 1
+      setCurrentRank(myRank)
+      setTotalPlayers(data.players.length)
+      // Update auch Score falls notwendig
+      const me = data.players.find(p => p.id === socket.id)
+      if (me) {
+        setScore(me.score)
       }
     })
 
@@ -167,6 +190,7 @@ function PlayQuiz() {
       socket.off('buzzer-points-awarded')
       socket.off('buzzer-unlocked')
       socket.off('player-score-updated')
+      socket.off('leaderboard-update')
       socket.off('host-disconnected')
       socket.off('error')
       socket.disconnect()
@@ -229,11 +253,48 @@ function PlayQuiz() {
           <div className="player-avatar">{playerInfo.avatar}</div>
           <div className="player-name">{playerInfo.name}</div>
         </div>
-        <div className="player-score">
-          <Trophy size={20} />
-          {score}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {currentRank && (
+            <div className="player-rank" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 12px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}>
+              <span>🏆</span>
+              <span>Rang {currentRank}/{totalPlayers}</span>
+            </div>
+          )}
+          <div className="player-score">
+            <Trophy size={20} />
+            {score}
+          </div>
         </div>
       </div>
+
+      {/* Points Notification */}
+      {pointsNotification && (
+        <div style={{
+          position: 'fixed',
+          top: '80px',
+          right: '20px',
+          padding: '16px 24px',
+          background: pointsNotification.type === 'positive' ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+          color: 'white',
+          borderRadius: '12px',
+          fontSize: '18px',
+          fontWeight: '700',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          zIndex: 10000,
+          animation: 'slideInRight 0.3s ease-out'
+        }}>
+          {pointsNotification.type === 'positive' ? '+' : ''}{pointsNotification.points} Punkte
+        </div>
+      )}
 
       {gameState === 'waiting' && (
         <div className="waiting-screen">
@@ -386,11 +447,46 @@ function PlayQuiz() {
             <div className="trophy-icon animate-bounce">
               <Trophy size={80} />
             </div>
-            <h1>Quiz Beendet!</h1>
+            <h1>🎉 Quiz Beendet!</h1>
+
+            {/* Rangverkündigung */}
+            {currentRank && (
+              <div className="rank-announcement" style={{
+                marginBottom: '30px',
+                padding: '30px',
+                background: currentRank === 1
+                  ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                  : currentRank === 2
+                  ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+                  : currentRank === 3
+                  ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                  : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                borderRadius: '20px',
+                color: 'white',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)',
+                animation: 'scaleIn 0.5s ease-out'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+                  {currentRank === 1 ? '🥇' : currentRank === 2 ? '🥈' : currentRank === 3 ? '🥉' : '🏆'}
+                </div>
+                <h2 style={{ fontSize: '36px', fontWeight: '900', marginBottom: '8px' }}>
+                  Platz {currentRank}
+                </h2>
+                <p style={{ fontSize: '20px', opacity: 0.9 }}>
+                  von {totalPlayers} Spielern
+                </p>
+              </div>
+            )}
+
             <div className="final-score card">
               <h3>Deine Endpunktzahl</h3>
               <div className="final-score-display">{score}</div>
-              <p>Großartige Leistung!</p>
+              <p>
+                {currentRank === 1 ? '🌟 Fantastisch! Du hast gewonnen!' :
+                 currentRank === 2 ? '🎊 Hervorragend! Zweiter Platz!' :
+                 currentRank === 3 ? '🎉 Großartig! Dritter Platz!' :
+                 '👏 Großartige Leistung!'}
+              </p>
             </div>
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/')}>
               Zurück zur Startseite
