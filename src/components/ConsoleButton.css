@@ -1,0 +1,31 @@
+.console-floating-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  font-size: 24px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 9998;
+}
+
+.console-floating-btn:hover {
+  transform: scale(1.1) translateY(-2px);
+  box-shadow: 0 8px 30px rgba(99, 102, 241, 0.6);
+  border-color: rgba(99, 102, 241, 0.9);
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+}
+
+.console-floating-btn:active {
+  transform: scale(0.95);
+}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload, Image as ImageIcon, Copy } from 'lucide-react'
 import ZoomControls from '../components/ZoomControls'
+import ConsoleButton from '../components/ConsoleButton'
 import './CreateQuiz.css'
 import { getQuizzes, getQuizById, saveQuiz, importQuizzes } from '../utils/quizStorage'
 
@@ -873,6 +874,7 @@ function CreateQuiz() {
       )}
 
       <ZoomControls />
+      <ConsoleButton />
     </div>
   )
 }

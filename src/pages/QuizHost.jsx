@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink, Plus, Minus, Unlock } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import ZoomControls from '../components/ZoomControls'
+import ConsoleButton from '../components/ConsoleButton'
 import socket from '../socket'
 import { createConfetti } from '../utils/confetti'
 import './QuizHost.css'
@@ -943,6 +944,7 @@ function QuizHost() {
       )}
 
       <ZoomControls />
+      <ConsoleButton />
     </div>
   )
 }
