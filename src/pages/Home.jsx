@@ -1,13 +1,25 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload, Edit, Trash2, Copy } from 'lucide-react'
 import './Home.css'
+import { getQuizzes, saveQuiz, deleteQuiz, deleteAllQuizzes, importQuizzes } from '../utils/quizStorage'
 
 function Home() {
   const navigate = useNavigate()
-  const [quizzes, setQuizzes] = useState(() => {
-    return JSON.parse(localStorage.getItem('quizzes') || '[]')
-  })
+  const [quizzes, setQuizzes] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Load quizzes on mount
+  useEffect(() => {
+    loadQuizzes()
+  }, [])
+
+  const loadQuizzes = async () => {
+    setLoading(true)
+    const data = await getQuizzes()
+    setQuizzes(data)
+    setLoading(false)
+  }
 
   const handleExportQuizzes = () => {
     const dataStr = JSON.stringify(quizzes, null, 2)
@@ -22,23 +34,24 @@ function Home() {
     URL.revokeObjectURL(url)
   }
 
-  const handleImportQuizzes = (event) => {
+  const handleImportQuizzes = async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const importedQuizzes = JSON.parse(e.target.result)
         if (!Array.isArray(importedQuizzes)) {
           alert('❌ Ungültiges Dateiformat!')
-          event.target.value = '' // Reset input
+          event.target.value = ''
           return
         }
 
-        // Ersetze alle Quizze mit den importierten
-        const currentCount = JSON.parse(localStorage.getItem('quizzes') || '[]').length
-        localStorage.setItem('quizzes', JSON.stringify(importedQuizzes))
+        const currentCount = quizzes.length
+
+        // Import quizzes using storage utility
+        await importQuizzes(importedQuizzes)
 
         if (currentCount > 0) {
           alert(`✅ Erfolgreich geladen!\n\n${currentCount} alte Quiz(ze) wurden ersetzt durch ${importedQuizzes.length} Quiz(ze) aus der Datei.`)
@@ -46,24 +59,22 @@ function Home() {
           alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich geladen!`)
         }
 
-        // Seite neu laden um Quiz anzuzeigen
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
+        // Reload quizzes
+        await loadQuizzes()
+        event.target.value = ''
       } catch (error) {
         alert('❌ Fehler beim Importieren der Datei!')
         console.error(error)
-        event.target.value = '' // Reset input
+        event.target.value = ''
       }
     }
     reader.readAsText(file)
   }
 
-  const handleDeleteQuiz = (quizId, quizTitle) => {
+  const handleDeleteQuiz = async (quizId, quizTitle) => {
     if (window.confirm(`🗑️ Quiz löschen?\n\n"${quizTitle}" wird unwiderruflich gelöscht.`)) {
-      const updatedQuizzes = quizzes.filter(q => q.id !== quizId)
-      localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
-      setQuizzes(updatedQuizzes)
+      await deleteQuiz(quizId)
+      await loadQuizzes()
     }
   }
 
@@ -71,16 +82,16 @@ function Home() {
     navigate(`/create?edit=${quizId}`)
   }
 
-  const handleDeleteAllQuizzes = () => {
+  const handleDeleteAllQuizzes = async () => {
     if (window.confirm(`🗑️ Alle Quizze löschen?\n\n${quizzes.length} Quiz(ze) werden unwiderruflich gelöscht!`)) {
       if (window.confirm('⚠️ Bist du sicher?\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) {
-        localStorage.setItem('quizzes', JSON.stringify([]))
-        setQuizzes([])
+        await deleteAllQuizzes()
+        await loadQuizzes()
       }
     }
   }
 
-  const handleDuplicateQuiz = (quiz) => {
+  const handleDuplicateQuiz = async (quiz) => {
     const duplicatedQuiz = {
       ...quiz,
       id: Date.now().toString(),
@@ -88,9 +99,8 @@ function Home() {
       createdAt: new Date().toISOString()
     }
 
-    const updatedQuizzes = [...quizzes, duplicatedQuiz]
-    localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
-    setQuizzes(updatedQuizzes)
+    await saveQuiz(duplicatedQuiz)
+    await loadQuizzes()
     alert(`✅ Quiz "${quiz.title}" wurde dupliziert!`)
   }
 

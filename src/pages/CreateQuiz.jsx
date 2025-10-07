@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload } from 'lucide-react'
 import './CreateQuiz.css'
+import { getQuizzes, getQuizById, saveQuiz, importQuizzes } from '../utils/quizStorage'
 
 function CreateQuiz() {
   const navigate = useNavigate()
@@ -15,13 +16,24 @@ function CreateQuiz() {
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState(null)
-  const [quizzes, setQuizzes] = useState(() => {
-    return JSON.parse(localStorage.getItem('quizzes') || '[]')
-  })
+  const [quizzes, setQuizzes] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Load quizzes on mount
+  useEffect(() => {
+    loadQuizzes()
+  }, [])
+
+  const loadQuizzes = async () => {
+    setLoading(true)
+    const data = await getQuizzes()
+    setQuizzes(data)
+    setLoading(false)
+  }
 
   // Lade Quiz zum Bearbeiten
   useEffect(() => {
-    if (editQuizId) {
+    if (editQuizId && quizzes.length > 0) {
       const quizToEdit = quizzes.find(q => q.id === editQuizId)
       if (quizToEdit) {
         // Prüfe Passwort wenn vorhanden
@@ -56,23 +68,24 @@ function CreateQuiz() {
     URL.revokeObjectURL(url)
   }
 
-  const handleImportQuizzes = (event) => {
+  const handleImportQuizzes = async (event) => {
     const file = event.target.files[0]
     if (!file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const importedQuizzes = JSON.parse(e.target.result)
         if (!Array.isArray(importedQuizzes)) {
           alert('❌ Ungültiges Dateiformat!')
-          event.target.value = '' // Reset input
+          event.target.value = ''
           return
         }
 
-        // Ersetze alle Quizze mit den importierten
-        const currentCount = JSON.parse(localStorage.getItem('quizzes') || '[]').length
-        localStorage.setItem('quizzes', JSON.stringify(importedQuizzes))
+        const currentCount = quizzes.length
+
+        // Import quizzes using storage utility
+        await importQuizzes(importedQuizzes)
 
         if (currentCount > 0) {
           alert(`✅ Erfolgreich geladen!\n\n${currentCount} alte Quiz(ze) wurden ersetzt durch ${importedQuizzes.length} Quiz(ze) aus der Datei.`)
@@ -80,14 +93,13 @@ function CreateQuiz() {
           alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich geladen!`)
         }
 
-        // Seite neu laden um Quiz anzuzeigen
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
+        // Reload quizzes
+        await loadQuizzes()
+        event.target.value = ''
       } catch (error) {
         alert('❌ Fehler beim Importieren der Datei!')
         console.error(error)
-        event.target.value = '' // Reset input
+        event.target.value = ''
       }
     }
     reader.readAsText(file)
@@ -191,7 +203,7 @@ function CreateQuiz() {
     setCurrentQuestion({ ...currentQuestion, answers: newAnswers })
   }
 
-  const saveQuiz = () => {
+  const saveQuizData = async () => {
     if (!quizTitle.trim()) {
       alert('Bitte gib einen Quiz-Titel ein')
       return
@@ -201,50 +213,36 @@ function CreateQuiz() {
       return
     }
 
-    const savedQuizzes = JSON.parse(localStorage.getItem('quizzes') || '[]')
+    const quiz = {
+      id: quizId || Date.now().toString(),
+      title: quizTitle,
+      password: quizPassword || undefined,
+      showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
+      questions: questions,
+      createdAt: quizId ? (quizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
 
-    if (quizId) {
-      // Bearbeite bestehendes Quiz
-      const quiz = {
-        id: quizId,
-        title: quizTitle,
-        password: quizPassword || undefined, // Nur speichern wenn gesetzt
-        showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
-        questions: questions,
-        createdAt: savedQuizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-
-      const updatedQuizzes = savedQuizzes.map(q => q.id === quizId ? quiz : q)
-      localStorage.setItem('quizzes', JSON.stringify(updatedQuizzes))
+    try {
+      await saveQuiz(quiz)
       return quiz
-    } else {
-      // Erstelle neues Quiz
-      const quiz = {
-        id: Date.now().toString(),
-        title: quizTitle,
-        password: quizPassword || undefined, // Nur speichern wenn gesetzt
-        showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
-        questions: questions,
-        createdAt: new Date().toISOString()
-      }
-
-      savedQuizzes.push(quiz)
-      localStorage.setItem('quizzes', JSON.stringify(savedQuizzes))
-      return quiz
+    } catch (error) {
+      alert('Fehler beim Speichern des Quiz!')
+      console.error(error)
+      return null
     }
   }
 
-  const handleSave = () => {
-    const quiz = saveQuiz()
+  const handleSave = async () => {
+    const quiz = await saveQuizData()
     if (quiz) {
       alert('Quiz gespeichert!')
       navigate('/')
     }
   }
 
-  const handleSaveAndStart = () => {
-    const quiz = saveQuiz()
+  const handleSaveAndStart = async () => {
+    const quiz = await saveQuizData()
     if (quiz) {
       alert('Quiz gespeichert!')
       navigate(`/host/${quiz.id}`)
