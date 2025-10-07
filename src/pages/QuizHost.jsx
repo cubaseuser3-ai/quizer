@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink } from 'lucide-react'
+import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink, Plus, Minus, Unlock } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import socket from '../socket'
+import { createConfetti } from '../utils/confetti'
 import './QuizHost.css'
 
 function QuizHost() {
@@ -19,6 +20,13 @@ function QuizHost() {
   const [buzzerPresses, setBuzzerPresses] = useState([])
   const [qrSize, setQrSize] = useState(200)
   const [isResizing, setIsResizing] = useState(false)
+  const [showPointsModal, setShowPointsModal] = useState(false)
+  const [selectedPlayer, setSelectedPlayer] = useState(null)
+  const [pointsToAdd, setPointsToAdd] = useState(0)
+  const [showRankingTransition, setShowRankingTransition] = useState(false)
+  const [previousRankings, setPreviousRankings] = useState([])
+  const [buzzerEnabled, setBuzzerEnabled] = useState(true)
+  const [buzzerLockedPlayers, setBuzzerLockedPlayers] = useState([])
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -89,6 +97,10 @@ function QuizHost() {
 
     socket.on('buzzer-pressed', (data) => {
       console.log('Buzzer pressed by:', data.playerName)
+
+      // Lock this player's buzzer
+      setBuzzerLockedPlayers(prev => [...prev, data.playerId])
+
       setBuzzerPresses(prev => [...prev, {
         playerId: data.playerId,
         playerName: data.playerName,
@@ -140,12 +152,16 @@ function QuizHost() {
 
   const nextQuestion = () => {
     if (currentQuestionIndex < quiz.questions.length - 1) {
+      // Speichere vorherige Rankings für Animation
+      prepareRankingTransition()
+
       setCurrentQuestionIndex(currentQuestionIndex + 1)
       setGameState('question')
       const question = quiz.questions[currentQuestionIndex + 1]
       setTimeLeft(question.timeLimit)
       setShowAnswers(false)
       setBuzzerPresses([]) // Reset buzzer presses
+      setBuzzerLockedPlayers([]) // Unlock all buzzers
 
       // Reset player answer status
       setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false, responseTime: null, bonusPoints: 0 })))
@@ -209,6 +225,72 @@ function QuizHost() {
       socket.disconnect()
       navigate('/')
     }
+  }
+
+  // Punkte manuell anpassen
+  const openPointsModal = (player) => {
+    setSelectedPlayer(player)
+    setPointsToAdd(0)
+    setShowPointsModal(true)
+  }
+
+  const adjustPlayerPoints = () => {
+    if (!selectedPlayer) return
+
+    const points = parseInt(pointsToAdd)
+    if (isNaN(points)) {
+      alert('Bitte eine gültige Zahl eingeben')
+      return
+    }
+
+    // Update lokal
+    setPlayers(prev => prev.map(p =>
+      p.id === selectedPlayer.id
+        ? { ...p, score: Math.max(0, p.score + points) }
+        : p
+    ))
+
+    // Sende Update an Server und Spieler
+    socket.emit('adjust-player-points', {
+      roomCode: joinCode,
+      playerId: selectedPlayer.id,
+      points: points
+    })
+
+    setShowPointsModal(false)
+    setSelectedPlayer(null)
+    setPointsToAdd(0)
+  }
+
+  // Buzzer-Freigabe Funktionen
+  const unlockAllBuzzers = () => {
+    setBuzzerLockedPlayers([])
+    socket.emit('unlock-buzzers', {
+      roomCode: joinCode,
+      playerIds: 'all'
+    })
+  }
+
+  const unlockBuzzerForPlayer = (playerId) => {
+    setBuzzerLockedPlayers(prev => prev.filter(id => id !== playerId))
+    socket.emit('unlock-buzzers', {
+      roomCode: joinCode,
+      playerIds: [playerId]
+    })
+  }
+
+  // Ranglisten-Animation vorbereiten
+  const prepareRankingTransition = () => {
+    const currentRankings = [...players]
+      .sort((a, b) => b.score - a.score)
+      .map((p, index) => ({ ...p, rank: index + 1 }))
+
+    setPreviousRankings(currentRankings)
+    setShowRankingTransition(true)
+
+    setTimeout(() => {
+      setShowRankingTransition(false)
+    }, 3000)
   }
 
   const awardPoints = (playerId, playerName) => {

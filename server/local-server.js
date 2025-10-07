@@ -2,7 +2,7 @@ import express from 'express'
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 import cors from 'cors'
-import Database from 'better-sqlite3'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
@@ -17,66 +17,88 @@ const httpServer = createServer(app)
 app.use(cors())
 app.use(express.json())
 
-// SQLite Database Setup
-const dbPath = path.join(process.cwd(), 'quizzes.db')
-const db = new Database(dbPath)
+// JSON File Storage Setup
+const dataPath = path.join(process.cwd(), 'data')
+const quizzesFilePath = path.join(dataPath, 'quizzes.json')
 
-// Create tables
-db.exec(`
-  CREATE TABLE IF NOT EXISTS quizzes (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    password TEXT,
-    showLeaderboardAfterQuestion INTEGER DEFAULT 0,
-    questions TEXT NOT NULL,
-    createdAt TEXT NOT NULL,
-    updatedAt TEXT
-  )
-`)
+// Ensure data directory exists
+if (!fs.existsSync(dataPath)) {
+  fs.mkdirSync(dataPath, { recursive: true })
+}
+
+// Initialize quizzes file if it doesn't exist
+if (!fs.existsSync(quizzesFilePath)) {
+  fs.writeFileSync(quizzesFilePath, JSON.stringify([]))
+}
+
+// Helper functions for JSON file operations
+const readQuizzes = () => {
+  try {
+    const data = fs.readFileSync(quizzesFilePath, 'utf8')
+    return JSON.parse(data)
+  } catch (error) {
+    console.error('Error reading quizzes:', error)
+    return []
+  }
+}
+
+const writeQuizzes = (quizzes) => {
+  try {
+    fs.writeFileSync(quizzesFilePath, JSON.stringify(quizzes, null, 2))
+    return true
+  } catch (error) {
+    console.error('Error writing quizzes:', error)
+    return false
+  }
+}
 
 // API Endpoints for Quiz Management
 app.get('/api/quizzes', (req, res) => {
-  const quizzes = db.prepare('SELECT * FROM quizzes ORDER BY createdAt DESC').all()
-  const parsed = quizzes.map(q => ({
-    ...q,
-    questions: JSON.parse(q.questions),
-    showLeaderboardAfterQuestion: Boolean(q.showLeaderboardAfterQuestion)
-  }))
-  res.json(parsed)
+  const quizzes = readQuizzes()
+  const sorted = quizzes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+  res.json(sorted)
 })
 
 app.get('/api/quizzes/:id', (req, res) => {
-  const quiz = db.prepare('SELECT * FROM quizzes WHERE id = ?').get(req.params.id)
+  const quizzes = readQuizzes()
+  const quiz = quizzes.find(q => q.id === req.params.id)
+
   if (!quiz) {
     return res.status(404).json({ error: 'Quiz not found' })
   }
-  res.json({
-    ...quiz,
-    questions: JSON.parse(quiz.questions),
-    showLeaderboardAfterQuestion: Boolean(quiz.showLeaderboardAfterQuestion)
-  })
+
+  res.json(quiz)
 })
 
 app.post('/api/quizzes', (req, res) => {
   const { id, title, password, showLeaderboardAfterQuestion, questions, createdAt, updatedAt } = req.body
 
   try {
-    const stmt = db.prepare(`
-      INSERT INTO quizzes (id, title, password, showLeaderboardAfterQuestion, questions, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `)
+    const quizzes = readQuizzes()
 
-    stmt.run(
+    const newQuiz = {
       id,
       title,
-      password || null,
-      showLeaderboardAfterQuestion ? 1 : 0,
-      JSON.stringify(questions),
+      password: password || undefined,
+      showLeaderboardAfterQuestion: Boolean(showLeaderboardAfterQuestion),
+      questions,
       createdAt,
-      updatedAt || null
-    )
+      updatedAt: updatedAt || null
+    }
 
-    res.json({ success: true, id })
+    // Check if quiz with this ID already exists (update instead of insert)
+    const existingIndex = quizzes.findIndex(q => q.id === id)
+    if (existingIndex >= 0) {
+      quizzes[existingIndex] = newQuiz
+    } else {
+      quizzes.push(newQuiz)
+    }
+
+    if (writeQuizzes(quizzes)) {
+      res.json({ success: true, id })
+    } else {
+      res.status(500).json({ error: 'Failed to save quiz' })
+    }
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -86,22 +108,27 @@ app.put('/api/quizzes/:id', (req, res) => {
   const { title, password, showLeaderboardAfterQuestion, questions, updatedAt } = req.body
 
   try {
-    const stmt = db.prepare(`
-      UPDATE quizzes
-      SET title = ?, password = ?, showLeaderboardAfterQuestion = ?, questions = ?, updatedAt = ?
-      WHERE id = ?
-    `)
+    const quizzes = readQuizzes()
+    const index = quizzes.findIndex(q => q.id === req.params.id)
 
-    stmt.run(
+    if (index === -1) {
+      return res.status(404).json({ error: 'Quiz not found' })
+    }
+
+    quizzes[index] = {
+      ...quizzes[index],
       title,
-      password || null,
-      showLeaderboardAfterQuestion ? 1 : 0,
-      JSON.stringify(questions),
-      updatedAt,
-      req.params.id
-    )
+      password: password || undefined,
+      showLeaderboardAfterQuestion: Boolean(showLeaderboardAfterQuestion),
+      questions,
+      updatedAt
+    }
 
-    res.json({ success: true })
+    if (writeQuizzes(quizzes)) {
+      res.json({ success: true })
+    } else {
+      res.status(500).json({ error: 'Failed to update quiz' })
+    }
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -109,8 +136,14 @@ app.put('/api/quizzes/:id', (req, res) => {
 
 app.delete('/api/quizzes/:id', (req, res) => {
   try {
-    db.prepare('DELETE FROM quizzes WHERE id = ?').run(req.params.id)
-    res.json({ success: true })
+    const quizzes = readQuizzes()
+    const filtered = quizzes.filter(q => q.id !== req.params.id)
+
+    if (writeQuizzes(filtered)) {
+      res.json({ success: true })
+    } else {
+      res.status(500).json({ error: 'Failed to delete quiz' })
+    }
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -462,7 +495,6 @@ httpServer.listen(PORT, '0.0.0.0', () => {
 process.on('SIGINT', () => {
   console.log('\n👋 Shutting down gracefully...')
   bonjour.unpublishAll(() => {
-    db.close()
     process.exit(0)
   })
 })
