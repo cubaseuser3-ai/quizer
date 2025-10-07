@@ -184,12 +184,28 @@ function CreateQuiz() {
       }
     }
 
+    // Bereite Frage zum Speichern vor
+    const questionToSave = { ...currentQuestion }
+
+    // Bei Buzzer-Fragen: Entferne answers komplett
+    if (currentQuestion.type === 'buzzer') {
+      delete questionToSave.answers
+      delete questionToSave.correctAnswer
+      delete questionToSave.correctAnswers
+      delete questionToSave.allowMultipleCorrect
+    }
+
+    // Bei True/False: Setze die richtigen Antworten
+    if (currentQuestion.type === 'truefalse') {
+      questionToSave.answers = ['Wahr', 'Falsch']
+    }
+
     if (editingQuestion !== null) {
       const updated = [...questions]
-      updated[editingQuestion] = currentQuestion
+      updated[editingQuestion] = questionToSave
       setQuestions(updated)
     } else {
-      setQuestions([...questions, currentQuestion])
+      setQuestions([...questions, questionToSave])
     }
     setShowQuestionModal(false)
   }
