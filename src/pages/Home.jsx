@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sparkles, Users, Zap, Trophy, Play, Plus, Smartphone, Globe, Download, Upload, Edit, Trash2, Copy } from 'lucide-react'
 import './Home.css'
-import { getQuizzes, saveQuiz, deleteQuiz, deleteAllQuizzes, importQuizzes } from '../utils/quizStorage'
+import { getQuizzes, saveQuiz, deleteQuiz, importQuizzes } from '../utils/quizStorage'
 
 function Home() {
   const navigate = useNavigate()
@@ -80,15 +80,6 @@ function Home() {
 
   const handleEditQuiz = (quizId) => {
     navigate(`/create?edit=${quizId}`)
-  }
-
-  const handleDeleteAllQuizzes = async () => {
-    if (window.confirm(`🗑️ Alle Quizze löschen?\n\n${quizzes.length} Quiz(ze) werden unwiderruflich gelöscht!`)) {
-      if (window.confirm('⚠️ Bist du sicher?\n\nDiese Aktion kann nicht rückgängig gemacht werden!')) {
-        await deleteAllQuizzes()
-        await loadQuizzes()
-      }
-    }
   }
 
   const handleDuplicateQuiz = async (quiz) => {
@@ -195,19 +186,6 @@ function Home() {
               <div className="section-header">
                 <h2>Meine gespeicherten Quizze ({quizzes.length})</h2>
                 <p>Klicke auf ein Quiz um es zu bearbeiten</p>
-                <button
-                  className="btn btn-outline-danger"
-                  onClick={handleDeleteAllQuizzes}
-                  style={{
-                    marginTop: '10px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    color: 'var(--danger)',
-                    border: '2px solid var(--danger)'
-                  }}
-                >
-                  <Trash2 size={20} />
-                  Alle Quizze löschen
-                </button>
               </div>
               <div className="features-grid">
                 {quizzes.map((quiz) => (

@@ -631,13 +631,13 @@ function QuizHost() {
             </div>
           )}
 
-          <div className="host-controls" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div className="question-actions" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {!showAnswers ? (
               <>
                 <button className="btn btn-secondary btn-lg" onClick={showResults}>
                   {quiz.showLeaderboardAfterQuestion ? '→ Antworten & Rangliste zeigen' : 'Antworten zeigen'}
                 </button>
-                <button className="btn btn-outline" onClick={forceNextQuestion}>
+                <button className="btn btn-outline-light" onClick={forceNextQuestion}>
                   ⏭️ Überspringen
                 </button>
               </>

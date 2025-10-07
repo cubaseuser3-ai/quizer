@@ -12,6 +12,8 @@ function CreateQuiz() {
   const [quizId, setQuizId] = useState(null)
   const [quizTitle, setQuizTitle] = useState('')
   const [quizPassword, setQuizPassword] = useState('')
+  const [quizPasswordRepeat, setQuizPasswordRepeat] = useState('')
+  const [enablePassword, setEnablePassword] = useState(false)
   const [showLeaderboardAfterQuestion, setShowLeaderboardAfterQuestion] = useState(false)
   const [questions, setQuestions] = useState([])
   const [showQuestionModal, setShowQuestionModal] = useState(false)
@@ -49,6 +51,8 @@ function CreateQuiz() {
         setQuizId(quizToEdit.id)
         setQuizTitle(quizToEdit.title)
         setQuizPassword(quizToEdit.password || '')
+        setQuizPasswordRepeat(quizToEdit.password || '')
+        setEnablePassword(!!quizToEdit.password)
         setShowLeaderboardAfterQuestion(quizToEdit.showLeaderboardAfterQuestion || false)
         setQuestions(quizToEdit.questions || [])
       }
@@ -212,11 +216,21 @@ function CreateQuiz() {
       alert('Bitte füge mindestens eine Frage hinzu')
       return
     }
+    if (enablePassword) {
+      if (!quizPassword.trim()) {
+        alert('Bitte gib ein Passwort ein oder deaktiviere die Passwort-Option')
+        return
+      }
+      if (quizPassword !== quizPasswordRepeat) {
+        alert('Die Passwörter stimmen nicht überein!')
+        return
+      }
+    }
 
     const quiz = {
       id: quizId || Date.now().toString(),
       title: quizTitle,
-      password: quizPassword || undefined,
+      password: enablePassword ? quizPassword : undefined,
       showLeaderboardAfterQuestion: showLeaderboardAfterQuestion,
       questions: questions,
       createdAt: quizId ? (quizzes.find(q => q.id === quizId)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
@@ -299,18 +313,48 @@ function CreateQuiz() {
                 onChange={(e) => setQuizTitle(e.target.value)}
               />
             </label>
-            <label>
-              <h3>Passwort (Optional) 🔒</h3>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: '16px' }}>
               <input
-                type="password"
-                placeholder="Leer lassen für kein Passwort..."
-                value={quizPassword}
-                onChange={(e) => setQuizPassword(e.target.value)}
+                type="checkbox"
+                checked={enablePassword}
+                onChange={(e) => {
+                  setEnablePassword(e.target.checked)
+                  if (!e.target.checked) {
+                    setQuizPassword('')
+                    setQuizPasswordRepeat('')
+                  }
+                }}
+                style={{ width: 'auto', cursor: 'pointer' }}
               />
-              <small style={{ color: '#64748b', fontSize: '14px', marginTop: '8px', display: 'block' }}>
-                Mit einem Passwort können nur Personen mit dem Passwort dieses Quiz bearbeiten oder starten.
-              </small>
+              <span style={{ fontSize: '18px', fontWeight: '600' }}>🔒 Quiz mit Passwort schützen</span>
             </label>
+            {enablePassword && (
+              <div style={{ marginLeft: '36px', marginBottom: '20px', paddingLeft: '20px', borderLeft: '3px solid var(--primary)' }}>
+                <label style={{ marginBottom: '12px' }}>
+                  <h4 style={{ fontSize: '16px', marginBottom: '8px' }}>Passwort</h4>
+                  <input
+                    type="password"
+                    placeholder="Passwort eingeben..."
+                    value={quizPassword}
+                    onChange={(e) => setQuizPassword(e.target.value)}
+                    required={enablePassword}
+                  />
+                </label>
+                <label>
+                  <h4 style={{ fontSize: '16px', marginBottom: '8px' }}>Passwort wiederholen</h4>
+                  <input
+                    type="password"
+                    placeholder="Passwort wiederholen..."
+                    value={quizPasswordRepeat}
+                    onChange={(e) => setQuizPasswordRepeat(e.target.value)}
+                    required={enablePassword}
+                  />
+                </label>
+                <small style={{ color: '#64748b', fontSize: '14px', marginTop: '8px', display: 'block' }}>
+                  Mit einem Passwort können nur Personen mit dem Passwort dieses Quiz bearbeiten oder starten.
+                </small>
+              </div>
+            )}
             <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
               <input
                 type="checkbox"
