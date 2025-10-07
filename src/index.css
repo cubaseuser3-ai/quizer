@@ -141,6 +141,20 @@ code {
 }
 
 .btn-outline {
+  background: rgba(99, 102, 241, 0.1);
+  border: 2px solid var(--primary);
+  color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(4px);
+}
+
+.btn-outline:hover {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.btn-outline-light {
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid white;
   color: white;
@@ -148,7 +162,7 @@ code {
   backdrop-filter: blur(4px);
 }
 
-.btn-outline:hover {
+.btn-outline-light:hover {
   background: white;
   color: var(--primary);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);

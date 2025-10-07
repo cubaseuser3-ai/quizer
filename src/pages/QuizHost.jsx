@@ -618,7 +618,7 @@ function QuizHost() {
                         <span style={{ color: '#94a3b8' }}>⏳ Wartet...</span>
                       )}
                       <button
-                        className="btn btn-sm btn-outline"
+                        className="btn btn-sm btn-outline-light"
                         onClick={() => openPointsModal(player)}
                         style={{ marginLeft: '8px' }}
                       >
