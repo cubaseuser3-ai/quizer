@@ -134,12 +134,15 @@ function CreateQuiz() {
   const [currentQuestion, setCurrentQuestion] = useState({
     type: 'multiple',
     question: '',
-    answers: ['', '', '', ''],
+    answers: ['', ''],
     correctAnswer: 0,
+    correctAnswers: [0], // Für multi-correct
+    allowMultipleCorrect: false,
     points: 100,
     timeLimit: 30,
     timeMode: 'fixed', // 'fixed', 'waitAll', 'unlimited'
-    maxTimeout: 60 // Nur für 'waitAll'
+    maxTimeout: 60, // Nur für 'waitAll'
+    image: '' // Für Bild-Upload
   })
 
   const addQuestion = () => {
@@ -158,8 +161,22 @@ function CreateQuiz() {
   }
 
   const saveQuestion = () => {
+    // Validierung
     if (!currentQuestion.question.trim()) {
-      alert('Bitte gib eine Frage ein')
+      alert('❌ Bitte gib eine Frage ein')
+      return
+    }
+
+    // Prüfe ob alle Antworten ausgefüllt sind
+    const emptyAnswers = currentQuestion.answers.filter(a => !a.trim())
+    if (emptyAnswers.length > 0) {
+      alert('❌ Bitte fülle alle Antwortfelder aus')
+      return
+    }
+
+    // Prüfe ob mindestens 2 Antworten vorhanden sind
+    if (currentQuestion.answers.length < 2) {
+      alert('❌ Mindestens 2 Antworten erforderlich')
       return
     }
 
@@ -177,6 +194,15 @@ function CreateQuiz() {
     setCurrentQuestion(questions[index])
     setEditingQuestion(index)
     setShowQuestionModal(true)
+  }
+
+  const duplicateQuestion = (index) => {
+    const questionToDuplicate = questions[index]
+    const duplicated = {
+      ...questionToDuplicate,
+      question: questionToDuplicate.question + ' (Kopie)'
+    }
+    setQuestions([...questions, duplicated])
   }
 
   const deleteQuestion = (index) => {
@@ -205,6 +231,32 @@ function CreateQuiz() {
     const newAnswers = [...currentQuestion.answers]
     newAnswers[index] = value
     setCurrentQuestion({ ...currentQuestion, answers: newAnswers })
+  }
+
+  const addAnswer = () => {
+    setCurrentQuestion({
+      ...currentQuestion,
+      answers: [...currentQuestion.answers, '']
+    })
+  }
+
+  const removeAnswer = (index) => {
+    if (currentQuestion.answers.length <= 2) {
+      alert('Mindestens 2 Antworten erforderlich!')
+      return
+    }
+    const newAnswers = currentQuestion.answers.filter((_, i) => i !== index)
+    let newCorrectAnswer = currentQuestion.correctAnswer
+    if (index === currentQuestion.correctAnswer) {
+      newCorrectAnswer = 0
+    } else if (index < currentQuestion.correctAnswer) {
+      newCorrectAnswer = currentQuestion.correctAnswer - 1
+    }
+    setCurrentQuestion({
+      ...currentQuestion,
+      answers: newAnswers,
+      correctAnswer: newCorrectAnswer
+    })
   }
 
   const saveQuizData = async () => {
@@ -429,6 +481,9 @@ function CreateQuiz() {
                         {questionTypes.find(t => t.id === q.type)?.icon} {questionTypes.find(t => t.id === q.type)?.name}
                       </span>
                       <div className="question-actions">
+                        <button className="btn-icon" onClick={() => duplicateQuestion(index)} title="Duplizieren">
+                          <Copy size={18} />
+                        </button>
                         <button className="btn-icon" onClick={() => editQuestion(index)}>
                           📝
                         </button>
@@ -499,16 +554,27 @@ function CreateQuiz() {
 
               {currentQuestion.type === 'multiple' && (
                 <div className="answers-section">
-                  <h4>Antworten</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4>Antworten</h4>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={addAnswer}
+                      style={{ padding: '6px 12px', fontSize: '14px' }}
+                    >
+                      <Plus size={16} /> Antwort hinzufügen
+                    </button>
+                  </div>
                   {currentQuestion.answers.map((answer, index) => (
-                    <div key={index} className="answer-input">
+                    <div key={index} className="answer-input" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <input
                         type="text"
                         placeholder={`Antwort ${index + 1}`}
                         value={answer}
                         onChange={(e) => updateAnswer(index, e.target.value)}
+                        style={{ flex: 1 }}
                       />
-                      <label className="radio-label">
+                      <label className="radio-label" style={{ whiteSpace: 'nowrap' }}>
                         <input
                           type="radio"
                           name="correctAnswer"
@@ -517,6 +583,17 @@ function CreateQuiz() {
                         />
                         Richtig
                       </label>
+                      {currentQuestion.answers.length > 2 && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => removeAnswer(index)}
+                          title="Entfernen"
+                          style={{ padding: '8px', color: 'var(--danger)' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
