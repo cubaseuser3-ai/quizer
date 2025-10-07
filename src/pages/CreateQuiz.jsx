@@ -167,6 +167,24 @@ function CreateQuiz() {
     setQuestions(questions.filter((_, i) => i !== index))
   }
 
+  const moveQuestionUp = (index) => {
+    if (index === 0) return
+    const newQuestions = [...questions]
+    const temp = newQuestions[index]
+    newQuestions[index] = newQuestions[index - 1]
+    newQuestions[index - 1] = temp
+    setQuestions(newQuestions)
+  }
+
+  const moveQuestionDown = (index) => {
+    if (index === questions.length - 1) return
+    const newQuestions = [...questions]
+    const temp = newQuestions[index]
+    newQuestions[index] = newQuestions[index + 1]
+    newQuestions[index + 1] = temp
+    setQuestions(newQuestions)
+  }
+
   const updateAnswer = (index, value) => {
     const newAnswers = [...currentQuestion.answers]
     newAnswers[index] = value
@@ -346,6 +364,24 @@ function CreateQuiz() {
                 {questions.map((q, index) => (
                   <div key={index} className="question-item card">
                     <div className="question-header">
+                      <div className="question-order-buttons">
+                        <button
+                          className="btn-icon"
+                          onClick={() => moveQuestionUp(index)}
+                          disabled={index === 0}
+                          title="Nach oben"
+                        >
+                          ⬆️
+                        </button>
+                        <button
+                          className="btn-icon"
+                          onClick={() => moveQuestionDown(index)}
+                          disabled={index === questions.length - 1}
+                          title="Nach unten"
+                        >
+                          ⬇️
+                        </button>
+                      </div>
                       <span className="question-number">#{index + 1}</span>
                       <span className="question-type">
                         {questionTypes.find(t => t.id === q.type)?.icon} {questionTypes.find(t => t.id === q.type)?.name}

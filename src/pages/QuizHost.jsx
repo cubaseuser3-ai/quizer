@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X } from 'lucide-react'
+import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import socket from '../socket'
 import './QuizHost.css'
 
@@ -16,6 +17,8 @@ function QuizHost() {
   const [copied, setCopied] = useState(false)
   const [roomCode, setRoomCode] = useState('')
   const [buzzerPresses, setBuzzerPresses] = useState([])
+  const [qrSize, setQrSize] = useState(200)
+  const [isResizing, setIsResizing] = useState(false)
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -145,7 +148,7 @@ function QuizHost() {
       setBuzzerPresses([]) // Reset buzzer presses
 
       // Reset player answer status
-      setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false })))
+      setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false, responseTime: null, bonusPoints: 0 })))
 
       // Emit next question
       socket.emit('next-question', { roomCode: joinCode })
@@ -156,15 +159,36 @@ function QuizHost() {
     }
   }
 
+  const forceNextQuestion = () => {
+    if (window.confirm('⏭️ Frage überspringen und zur nächsten Frage gehen?')) {
+      nextQuestion()
+    }
+  }
+
   const showResults = () => {
     setShowAnswers(true)
 
-    // Wenn Quiz die Option hat, automatisch Rangliste anzeigen
-    if (quiz.showLeaderboardAfterQuestion) {
+    // Prüfe ob alle Spieler falsch geantwortet haben
+    const allWrong = players.length > 0 && players.every(p => p.hasAnswered && !p.correct)
+
+    if (allWrong) {
+      // Wenn alle falsch: Kurz warten und automatisch weiter
       setTimeout(() => {
-        setGameState('results')
-        socket.emit('show-results', { roomCode: joinCode })
-      }, 2000) // 2 Sekunden warten bevor Rangliste kommt
+        if (quiz.showLeaderboardAfterQuestion) {
+          setGameState('results')
+          socket.emit('show-results', { roomCode: joinCode })
+        } else {
+          nextQuestion()
+        }
+      }, 3000) // 3 Sekunden zeigen dass alle falsch sind
+    } else {
+      // Normal: Wenn Quiz die Option hat, automatisch Rangliste anzeigen
+      if (quiz.showLeaderboardAfterQuestion) {
+        setTimeout(() => {
+          setGameState('results')
+          socket.emit('show-results', { roomCode: joinCode })
+        }, 2000)
+      }
     }
   }
 
@@ -220,22 +244,98 @@ function QuizHost() {
       {gameState === 'lobby' && (
         <div className="lobby">
           <div className="lobby-content">
-            <button className="btn btn-outline" onClick={handleEndQuiz} style={{ position: 'absolute', top: '20px', right: '20px' }}>
-              <X size={20} />
-              Beenden
-            </button>
+            <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '10px' }}>
+              <button
+                className="btn btn-primary btn-lg animate-pulse"
+                onClick={startGame}
+                disabled={players.length === 0}
+              >
+                <Play size={24} />
+                Spiel starten
+              </button>
+              <button className="btn btn-outline" onClick={handleEndQuiz}>
+                <X size={20} />
+                Beenden
+              </button>
+            </div>
             <h1 className="quiz-title animate-fadeIn">{quiz.title}</h1>
 
             <div className="join-info card animate-fadeIn">
               <h2>Spieler beitreten über:</h2>
               <div className="join-code-display">
                 <div className="join-code">{joinCode}</div>
-                <button className="btn btn-outline" onClick={copyJoinCode}>
-                  {copied ? <Check size={20} /> : <Copy size={20} />}
-                  {copied ? 'Kopiert!' : 'Link kopieren'}
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button className="btn btn-outline" onClick={copyJoinCode}>
+                    {copied ? <Check size={20} /> : <Copy size={20} />}
+                    {copied ? 'Kopiert!' : 'Link kopieren'}
+                  </button>
+                  <a
+                    href={joinUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-outline"
+                  >
+                    <ExternalLink size={20} />
+                    Link öffnen
+                  </a>
+                </div>
               </div>
-              <p className="join-url">{window.location.origin}/Quiz/join</p>
+              <p className="join-url">{joinUrl}</p>
+
+              {/* QR Code */}
+              <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                <h3 style={{ marginBottom: '16px' }}>Oder QR-Code scannen:</h3>
+                <div
+                  style={{
+                    display: 'inline-block',
+                    padding: '20px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    position: 'relative',
+                    resize: 'both',
+                    overflow: 'auto',
+                    minWidth: '150px',
+                    minHeight: '150px',
+                    maxWidth: '500px',
+                    maxHeight: '500px',
+                    border: '3px solid #e2e8f0',
+                    cursor: 'nwse-resize'
+                  }}
+                  onMouseDown={(e) => {
+                    setIsResizing(true)
+                    const startSize = qrSize
+                    const startX = e.clientX
+                    const startY = e.clientY
+
+                    const handleMouseMove = (e) => {
+                      const deltaX = e.clientX - startX
+                      const deltaY = e.clientY - startY
+                      const delta = Math.max(deltaX, deltaY)
+                      const newSize = Math.min(Math.max(startSize + delta, 100), 400)
+                      setQrSize(newSize)
+                    }
+
+                    const handleMouseUp = () => {
+                      setIsResizing(false)
+                      document.removeEventListener('mousemove', handleMouseMove)
+                      document.removeEventListener('mouseup', handleMouseUp)
+                    }
+
+                    document.addEventListener('mousemove', handleMouseMove)
+                    document.addEventListener('mouseup', handleMouseUp)
+                  }}
+                >
+                  <QRCodeSVG
+                    value={joinUrl}
+                    size={qrSize}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <p style={{ marginTop: '12px', fontSize: '14px', color: '#64748b' }}>
+                  💡 Ziehe an der Ecke um den QR-Code zu vergrößern
+                </p>
+              </div>
             </div>
 
             <div className="players-waiting card animate-fadeIn">
@@ -273,15 +373,6 @@ function QuizHost() {
                 <span className="info-label">Punkte</span>
               </div>
             </div>
-
-            <button
-              className="btn btn-primary btn-lg animate-pulse"
-              onClick={startGame}
-              disabled={players.length === 0}
-            >
-              <Play size={24} />
-              Spiel starten
-            </button>
           </div>
         </div>
       )}
@@ -409,29 +500,40 @@ function QuizHost() {
             </div>
           )}
 
-          <div className="host-controls">
+          <div className="host-controls" style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {!showAnswers ? (
-              <button className="btn btn-secondary btn-lg" onClick={showResults}>
-                {quiz.showLeaderboardAfterQuestion ? '→ Antworten & Rangliste zeigen' : 'Antworten zeigen'}
-              </button>
+              <>
+                <button className="btn btn-secondary btn-lg" onClick={showResults}>
+                  {quiz.showLeaderboardAfterQuestion ? '→ Antworten & Rangliste zeigen' : 'Antworten zeigen'}
+                </button>
+                <button className="btn btn-outline" onClick={forceNextQuestion}>
+                  ⏭️ Überspringen
+                </button>
+              </>
             ) : quiz.showLeaderboardAfterQuestion && gameState !== 'results' ? (
-              <div style={{ color: 'white', fontSize: '18px', padding: '20px' }}>
-                ⏳ Zeige Rangliste in Kürze...
+              <div style={{ color: 'white', fontSize: '18px', padding: '20px', width: '100%', textAlign: 'center' }}>
+                {players.length > 0 && players.every(p => p.hasAnswered && !p.correct) ? (
+                  <span style={{ color: '#ef4444' }}>❌ Alle Spieler haben falsch geantwortet - Weiter zur nächsten Frage...</span>
+                ) : (
+                  <span>⏳ Zeige Rangliste in Kürze...</span>
+                )}
               </div>
             ) : !quiz.showLeaderboardAfterQuestion ? (
-              <button className="btn btn-success btn-lg" onClick={nextQuestion}>
-                {currentQuestionIndex < quiz.questions.length - 1 ? (
-                  <>
-                    <SkipForward size={24} />
-                    Nächste Frage
-                  </>
-                ) : (
-                  <>
-                    <Trophy size={24} />
-                    Endergebnis
-                  </>
-                )}
-              </button>
+              <>
+                <button className="btn btn-success btn-lg" onClick={nextQuestion}>
+                  {currentQuestionIndex < quiz.questions.length - 1 ? (
+                    <>
+                      <SkipForward size={24} />
+                      Nächste Frage
+                    </>
+                  ) : (
+                    <>
+                      <Trophy size={24} />
+                      Endergebnis
+                    </>
+                  )}
+                </button>
+              </>
             ) : null}
           </div>
         </div>
