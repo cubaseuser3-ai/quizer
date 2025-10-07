@@ -211,7 +211,16 @@ function CreateQuiz() {
   }
 
   const editQuestion = (index) => {
-    setCurrentQuestion(questions[index])
+    const question = questions[index]
+    // Stelle sicher, dass answers existiert (für UI-Kompatibilität)
+    const questionWithAnswers = {
+      ...question,
+      answers: question.answers || ['', ''],
+      correctAnswer: question.correctAnswer ?? 0,
+      correctAnswers: question.correctAnswers || [0],
+      allowMultipleCorrect: question.allowMultipleCorrect || false
+    }
+    setCurrentQuestion(questionWithAnswers)
     setEditingQuestion(index)
     setShowQuestionModal(true)
   }
@@ -220,8 +229,12 @@ function CreateQuiz() {
     const questionToDuplicate = questions[index]
     const duplicated = {
       ...questionToDuplicate,
-      question: questionToDuplicate.question + ' (Kopie)'
+      question: questionToDuplicate.question + ' (Kopie)',
+      // Stelle sicher, dass bei Buzzer keine answers vorhanden sind
+      answers: questionToDuplicate.type === 'buzzer' ? undefined : questionToDuplicate.answers
     }
+    // Entferne undefined-Felder
+    Object.keys(duplicated).forEach(key => duplicated[key] === undefined && delete duplicated[key])
     setQuestions([...questions, duplicated])
   }
 
