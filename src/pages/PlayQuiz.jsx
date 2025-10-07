@@ -15,6 +15,7 @@ function PlayQuiz() {
   const [timeLeft, setTimeLeft] = useState(0)
   const [buzzerActive, setBuzzerActive] = useState(false)
   const [buzzerPressed, setBuzzerPressed] = useState(false)
+  const [buzzerLocked, setBuzzerLocked] = useState(false)
   const [answerResult, setAnswerResult] = useState(null)
   const [errorMessage, setErrorMessage] = useState(null)
   const [questionStartTime, setQuestionStartTime] = useState(null)
@@ -110,6 +111,21 @@ function PlayQuiz() {
       setGameState('answered')
     })
 
+    socket.on('buzzer-unlocked', (data) => {
+      console.log('Buzzer unlocked:', data)
+      if (data.playerIds === 'all' || data.playerId === socket.id) {
+        setBuzzerLocked(false)
+        setBuzzerPressed(false)
+      }
+    })
+
+    socket.on('player-score-updated', (data) => {
+      console.log('Score updated:', data)
+      if (data.playerId === socket.id) {
+        setScore(data.newScore)
+      }
+    })
+
     socket.on('host-disconnected', () => {
       alert('Host hat die Verbindung getrennt. Spiel beendet.')
       navigate('/')
@@ -140,6 +156,8 @@ function PlayQuiz() {
       socket.off('show-results')
       socket.off('game-over')
       socket.off('buzzer-points-awarded')
+      socket.off('buzzer-unlocked')
+      socket.off('player-score-updated')
       socket.off('host-disconnected')
       socket.off('error')
       socket.disconnect()
@@ -170,9 +188,10 @@ function PlayQuiz() {
   }
 
   const handleBuzzer = () => {
-    if (!buzzerActive || buzzerPressed) return
+    if (!buzzerActive || buzzerPressed || buzzerLocked) return
 
     setBuzzerPressed(true)
+    setBuzzerLocked(true) // Lock buzzer after pressing
 
     // Send buzzer press to server
     socket.emit('buzzer-press', {
@@ -287,15 +306,17 @@ function PlayQuiz() {
             {currentQuestion.type === 'buzzer' && (
               <div className="buzzer-container">
                 <button
-                  className={`buzzer-btn ${buzzerPressed ? 'pressed' : ''}`}
+                  className={`buzzer-btn ${buzzerPressed ? 'pressed' : ''} ${buzzerLocked ? 'locked' : ''}`}
                   onClick={handleBuzzer}
-                  disabled={!buzzerActive}
+                  disabled={!buzzerActive || buzzerLocked}
                 >
                   <Zap size={64} />
-                  <span>BUZZER</span>
+                  <span>{buzzerLocked ? 'GESPERRT' : 'BUZZER'}</span>
                 </button>
                 <p className="buzzer-hint">
-                  {buzzerPressed ? '✓ Du warst der Schnellste!' : 'Drücke den Buzzer wenn du die Antwort weißt!'}
+                  {buzzerLocked ? '🔒 Gesperrt - Warte auf Freigabe vom Host' :
+                   buzzerPressed ? '✓ Du hast gebuzzert!' :
+                   'Drücke den Buzzer wenn du die Antwort weißt!'}
                 </p>
               </div>
             )}

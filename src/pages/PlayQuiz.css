@@ -303,6 +303,13 @@
   animation: buzzerPulse 0.5s ease;
 }
 
+.buzzer-btn.locked {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  border-color: #334155;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .buzzer-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

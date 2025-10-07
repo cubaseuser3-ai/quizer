@@ -170,6 +170,8 @@ function QuizHost() {
       socket.emit('next-question', { roomCode: joinCode })
     } else {
       setGameState('final')
+      // Konfetti starten
+      createConfetti()
       // Game over - show results
       socket.emit('show-results', { roomCode: joinCode })
     }
@@ -507,34 +509,71 @@ function QuizHost() {
             )}
 
             {currentQuestion.type === 'buzzer' && (
-              <div className="buzzer-list">
-                <h3>Spieler die gebuzzert haben:</h3>
-                {buzzerPresses.length === 0 ? (
-                  <div className="empty-buzzer">
-                    <p>Warte darauf, dass Spieler den Buzzer drücken...</p>
-                    <div className="pulse-dot"></div>
-                  </div>
-                ) : (
-                  <div className="buzzer-players">
-                    {buzzerPresses.map((press, index) => (
-                      <div key={press.playerId} className="buzzer-player-card" style={{ animationDelay: `${index * 0.1}s` }}>
-                        <div className="buzzer-rank">#{index + 1}</div>
-                        <div className="buzzer-player-info">
-                          <span className="player-avatar">{press.playerAvatar}</span>
-                          <span className="player-name">{press.playerName}</span>
+              <>
+                <div className="buzzer-list">
+                  <h3>Spieler die gebuzzert haben:</h3>
+                  {buzzerPresses.length === 0 ? (
+                    <div className="empty-buzzer">
+                      <p>Warte darauf, dass Spieler den Buzzer drücken...</p>
+                      <div className="pulse-dot"></div>
+                    </div>
+                  ) : (
+                    <div className="buzzer-players">
+                      {buzzerPresses.map((press, index) => (
+                        <div key={press.playerId} className="buzzer-player-card" style={{ animationDelay: `${index * 0.1}s` }}>
+                          <div className="buzzer-rank">#{index + 1}</div>
+                          <div className="buzzer-player-info">
+                            <span className="player-avatar">{press.playerAvatar}</span>
+                            <span className="player-name">{press.playerName}</span>
+                          </div>
+                          <button
+                            className="btn btn-success"
+                            onClick={() => awardPoints(press.playerId, press.playerName)}
+                          >
+                            <Trophy size={18} />
+                            {currentQuestion.points} Punkte geben
+                          </button>
                         </div>
-                        <button
-                          className="btn btn-success"
-                          onClick={() => awardPoints(press.playerId, press.playerName)}
-                        >
-                          <Trophy size={18} />
-                          {currentQuestion.points} Punkte geben
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Buzzer-Freigabe Kontrollen */}
+                <div className="buzzer-controls">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3>Buzzer-Freigabe</h3>
+                    <button className="btn btn-primary" onClick={unlockAllBuzzers}>
+                      <Unlock size={18} />
+                      Alle freigeben
+                    </button>
                   </div>
-                )}
-              </div>
+
+                  {players.map(player => {
+                    const isLocked = buzzerLockedPlayers.includes(player.id)
+                    return (
+                      <div key={player.id} className={`buzzer-player-item ${isLocked ? 'locked' : ''}`}>
+                        <div className="buzzer-player-info">
+                          <span style={{ fontSize: '24px' }}>{player.avatar}</span>
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>{player.name}</span>
+                          <span className={`buzzer-status ${isLocked ? 'locked' : 'unlocked'}`}>
+                            {isLocked ? '🔒 Gesperrt' : '✓ Frei'}
+                          </span>
+                        </div>
+                        {isLocked && (
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => unlockBuzzerForPlayer(player.id)}
+                          >
+                            <Unlock size={16} />
+                            Freigeben
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
           </div>
 
@@ -575,6 +614,13 @@ function QuizHost() {
                       ) : (
                         <span style={{ color: '#94a3b8' }}>⏳ Wartet...</span>
                       )}
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => openPointsModal(player)}
+                        style={{ marginLeft: '8px' }}
+                      >
+                        <Plus size={16} />
+                      </button>
                     </div>
                   ))
                 )}
@@ -652,16 +698,78 @@ function QuizHost() {
             </div>
             <h1 className="animate-fadeIn">Quiz Beendet!</h1>
 
-            <div className="podium animate-fadeIn">
-              {sortedPlayers.slice(0, 3).map((player, index) => (
-                <div key={player.id} className={`podium-place place-${index + 1}`}>
-                  <div className="podium-avatar">{player.avatar}</div>
-                  <div className="podium-name">{player.name}</div>
-                  <div className="podium-score">{player.score}</div>
-                  <div className="podium-rank">{index + 1}</div>
+            {/* Podium mit Top 3 */}
+            {sortedPlayers.length >= 3 && (
+              <div className="podium-container">
+                {/* 2. Platz */}
+                <div className="podium-place second">
+                  <div className="podium-player">
+                    <div className="podium-avatar">{sortedPlayers[1].avatar}</div>
+                    <div className="podium-name">{sortedPlayers[1].name}</div>
+                    <div className="podium-score">{sortedPlayers[1].score} Punkte</div>
+                  </div>
+                  <div className="podium-rank">
+                    <div className="podium-medal">🥈</div>
+                    <div className="podium-position">2</div>
+                  </div>
                 </div>
-              ))}
-            </div>
+
+                {/* 1. Platz */}
+                <div className="podium-place first">
+                  <div className="podium-player">
+                    <div className="podium-avatar">{sortedPlayers[0].avatar}</div>
+                    <div className="podium-name">{sortedPlayers[0].name}</div>
+                    <div className="podium-score">{sortedPlayers[0].score} Punkte</div>
+                  </div>
+                  <div className="podium-rank">
+                    <div className="podium-medal">🥇</div>
+                    <div className="podium-position">1</div>
+                  </div>
+                </div>
+
+                {/* 3. Platz */}
+                <div className="podium-place third">
+                  <div className="podium-player">
+                    <div className="podium-avatar">{sortedPlayers[2].avatar}</div>
+                    <div className="podium-name">{sortedPlayers[2].name}</div>
+                    <div className="podium-score">{sortedPlayers[2].score} Punkte</div>
+                  </div>
+                  <div className="podium-rank">
+                    <div className="podium-medal">🥉</div>
+                    <div className="podium-position">3</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Restliche Spieler */}
+            {sortedPlayers.length > 3 && (
+              <div className="remaining-players" style={{ marginTop: '40px', width: '100%', maxWidth: '600px' }}>
+                <h3 style={{ color: 'white', marginBottom: '20px', fontSize: '24px' }}>Weitere Teilnehmer:</h3>
+                {sortedPlayers.slice(3).map((player, index) => (
+                  <div key={player.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px',
+                    background: 'rgba(255, 255, 255, 0.9)',
+                    borderRadius: '12px',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#64748b', minWidth: '40px' }}>
+                      {index + 4}
+                    </div>
+                    <div style={{ fontSize: '32px' }}>{player.avatar}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '18px', color: '#1e293b' }}>{player.name}</div>
+                    </div>
+                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#6366f1' }}>
+                      {player.score}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="final-actions">
               <button className="btn btn-outline btn-lg" onClick={handleRestartQuiz}>
@@ -671,6 +779,65 @@ function QuizHost() {
               <button className="btn btn-primary btn-lg" onClick={handleEndQuiz}>
                 <X size={20} />
                 Quiz beenden
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Host-Kontroll-Buttons (immer sichtbar außer in Lobby) */}
+      {gameState !== 'lobby' && (
+        <div className="host-controls">
+          <button className="btn btn-warning" onClick={handleRestartQuiz}>
+            <RotateCcw size={20} />
+            Neustart
+          </button>
+          <button className="btn btn-danger" onClick={handleEndQuiz}>
+            <X size={20} />
+            Beenden
+          </button>
+        </div>
+      )}
+
+      {/* Punkte-Anpass-Modal */}
+      {showPointsModal && selectedPlayer && (
+        <div className="points-modal-overlay" onClick={() => setShowPointsModal(false)}>
+          <div className="points-modal" onClick={(e) => e.stopPropagation()}>
+            <h2>Punkte anpassen</h2>
+
+            <div className="points-modal-player">
+              <span>{selectedPlayer.avatar}</span>
+              <div>
+                <h3>{selectedPlayer.name}</h3>
+                <p>Aktuelle Punkte: {selectedPlayer.score}</p>
+              </div>
+            </div>
+
+            <div className="points-input-group">
+              <label>Punkte hinzufügen/abziehen:</label>
+              <input
+                type="number"
+                value={pointsToAdd}
+                onChange={(e) => setPointsToAdd(e.target.value)}
+                placeholder="z.B. 100 oder -50"
+                autoFocus
+              />
+
+              <div className="points-quick-buttons">
+                <button onClick={() => setPointsToAdd(-100)}>-100</button>
+                <button onClick={() => setPointsToAdd(-50)}>-50</button>
+                <button onClick={() => setPointsToAdd(50)}>+50</button>
+                <button onClick={() => setPointsToAdd(100)}>+100</button>
+              </div>
+            </div>
+
+            <div className="points-modal-actions">
+              <button className="btn btn-outline" onClick={() => setShowPointsModal(false)}>
+                Abbrechen
+              </button>
+              <button className="btn btn-primary" onClick={adjustPlayerPoints}>
+                <Check size={20} />
+                Bestätigen
               </button>
             </div>
           </div>
