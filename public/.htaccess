@@ -16,9 +16,10 @@
     Header set Expires "0"
   </FilesMatch>
 
-  # JavaScript und CSS - Kurzer Cache mit Version
+  # JavaScript und CSS - Langer Cache wegen Hash-Versionierung
+  # Da Vite bereits Hash in Dateinamen einfügt, können wir lange cachen
   <FilesMatch "\.(js|css)$">
-    Header set Cache-Control "public, max-age=3600, must-revalidate"
+    Header set Cache-Control "public, max-age=31536000, immutable"
   </FilesMatch>
 
   # Bilder - Längerer Cache

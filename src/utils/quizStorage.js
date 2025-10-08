@@ -3,7 +3,8 @@
 
 const isElectron = () => {
   // Check if running in Electron environment
-  return window.location.protocol === 'http:' && window.location.hostname === 'localhost'
+  // Only return true if electron API is actually available
+  return typeof window !== 'undefined' && window.electron && typeof window.electron.getQuizzes === 'function'
 }
 
 const API_BASE = 'http://localhost:3000/api'

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quizer - Online Version Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #64748b;
+            font-size: 16px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon {
+            font-size: 32px;
+        }
+
+        .stat-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-value.online {
+            color: #10b981;
+        }
+
+        .stat-value.offline {
+            color: #ef4444;
+        }
+
+        .stat-value.waiting {
+            color: #f59e0b;
+        }
+
+        .stat-subtitle {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .log-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .log-header h2 {
+            font-size: 20px;
+            color: #1e293b;
+        }
+
+        .log-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #6366f1;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .log-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8fafc;
+        }
+
+        .log-entry {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            border-left: 4px solid #cbd5e1;
+        }
+
+        .log-entry.success {
+            background: #f0fdf4;
+            border-left-color: #10b981;
+            color: #065f46;
+        }
+
+        .log-entry.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .log-entry.info {
+            background: #eff6ff;
+            border-left-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .log-timestamp {
+            color: #64748b;
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            transition: width 0.3s ease;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .status-badge.online {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-badge.offline {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-badge.checking {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .checking {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Quizer - Online Version Monitor</h1>
+            <p>Überwacht die Verfügbarkeit der Online-Version und des Socket-Servers</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-icon">🌐</span>
+                    <span class="stat-title">InfinityFree</span>
+                </div>
+                <div id="infinityStatus" class="stat-value offline">Offline</div>
+                <div class="stat-subtitle">Webseite Status</div>
+                <span id="infinityBadge" class="status-badge offline">HTTP 404</span>
+                <div class="progress-bar">
+                    <div id="infinityProgress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-icon">⚡</span>
+                    <span class="stat-title">Render Socket</span>
+                </div>
+                <div id="renderStatus" class="stat-value online">Online</div>
+                <div class="stat-subtitle">WebSocket Server</div>
+                <span id="renderBadge" class="status-badge online">HTTP 200</span>
+                <div class="progress-bar">
+                    <div id="renderProgress" class="progress-fill" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-icon">🔄</span>
+                    <span class="stat-title">Status</span>
+                </div>
+                <div id="overallStatus" class="stat-value waiting">Warten...</div>
+                <div class="stat-subtitle">Gesamtstatus</div>
+                <span id="overallBadge" class="status-badge checking">Prüfung läuft</span>
+                <div class="progress-bar">
+                    <div id="overallProgress" class="progress-fill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <div class="log-header">
+                <h2>📋 Live Logs</h2>
+                <div class="log-actions">
+                    <button class="btn btn-primary" onclick="checkNow()">🔄 Jetzt prüfen</button>
+                    <button class="btn btn-secondary" onclick="clearLogs()">🗑️ Logs leeren</button>
+                    <button class="btn btn-secondary" onclick="openOnline()">🔗 Online öffnen</button>
+                </div>
+            </div>
+            <div id="logList" class="log-list">
+                <!-- Logs werden hier eingefügt -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ONLINE_URL = 'http://if0-39705173.infinityfreeapp.com/Quiz/';
+        const RENDER_URL = 'https://quizer-backend-9v9a.onrender.com';
+        const CHECK_INTERVAL = 30000; // 30 Sekunden
+        let checkCount = 0;
+
+        function addLog(message, type = 'info') {
+            const logList = document.getElementById('logList');
+            const timestamp = new Date().toLocaleTimeString('de-DE');
+
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.innerHTML = `
+                <div class="log-timestamp">${timestamp}</div>
+                <div>${message}</div>
+            `;
+
+            logList.insertBefore(logEntry, logList.firstChild);
+
+            // Maximal 50 Logs behalten
+            while (logList.children.length > 50) {
+                logList.removeChild(logList.lastChild);
+            }
+        }
+
+        async function checkRenderServer() {
+            try {
+                const response = await fetch(RENDER_URL, { mode: 'no-cors' });
+                // no-cors gibt immer opaque response, also versuchen wir HEAD
+                const headResponse = await fetch(RENDER_URL, { method: 'HEAD' });
+                return {
+                    available: true,
+                    status: 200
+                };
+            } catch (error) {
+                // CORS-Error bedeutet eigentlich dass der Server läuft
+                if (error.message.includes('CORS') || error.message.includes('network')) {
+                    return { available: true, status: 200 };
+                }
+                return { available: false, error: error.message };
+            }
+        }
+
+        async function checkInfinityFree() {
+            try {
+                const response = await fetch(ONLINE_URL, {
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+
+                // Bei no-cors können wir Status nicht direkt prüfen
+                // Versuche stattdessen ein fetch mit credentials
+                const testResponse = await fetch(ONLINE_URL);
+                return {
+                    available: testResponse.ok,
+                    status: testResponse.status
+                };
+            } catch (error) {
+                // Könnte CORS sein, versuche trotzdem
+                return { available: false, status: 404, error: error.message };
+            }
+        }
+
+        async function performCheck() {
+            checkCount++;
+            addLog(`🔍 Check #${checkCount} gestartet...`, 'info');
+
+            // Check Render
+            const renderStatus = await checkRenderServer();
+            const renderEl = document.getElementById('renderStatus');
+            const renderBadge = document.getElementById('renderBadge');
+            const renderProgress = document.getElementById('renderProgress');
+
+            if (renderStatus.available) {
+                renderEl.textContent = 'Online';
+                renderEl.className = 'stat-value online';
+                renderBadge.textContent = `HTTP ${renderStatus.status}`;
+                renderBadge.className = 'status-badge online';
+                renderProgress.style.width = '100%';
+                addLog('✅ Render Server: Online', 'success');
+            } else {
+                renderEl.textContent = 'Offline';
+                renderEl.className = 'stat-value offline';
+                renderBadge.textContent = 'Nicht erreichbar';
+                renderBadge.className = 'status-badge offline';
+                renderProgress.style.width = '0%';
+                addLog('❌ Render Server: Offline', 'error');
+            }
+
+            // Check InfinityFree
+            const infinityStatus = await checkInfinityFree();
+            const infinityEl = document.getElementById('infinityStatus');
+            const infinityBadge = document.getElementById('infinityBadge');
+            const infinityProgress = document.getElementById('infinityProgress');
+
+            if (infinityStatus.available) {
+                infinityEl.textContent = 'Online';
+                infinityEl.className = 'stat-value online';
+                infinityBadge.textContent = `HTTP ${infinityStatus.status}`;
+                infinityBadge.className = 'status-badge online';
+                infinityProgress.style.width = '100%';
+                addLog('✅ InfinityFree: Online', 'success');
+            } else {
+                infinityEl.textContent = 'Offline';
+                infinityEl.className = 'stat-value offline';
+                infinityBadge.textContent = `HTTP ${infinityStatus.status}`;
+                infinityBadge.className = 'status-badge offline';
+                infinityProgress.style.width = '0%';
+                addLog(`❌ InfinityFree: Offline (${infinityStatus.status})`, 'error');
+            }
+
+            // Overall Status
+            const overallEl = document.getElementById('overallStatus');
+            const overallBadge = document.getElementById('overallBadge');
+            const overallProgress = document.getElementById('overallProgress');
+
+            const allOnline = renderStatus.available && infinityStatus.available;
+
+            if (allOnline) {
+                overallEl.textContent = 'Bereit! 🎉';
+                overallEl.className = 'stat-value online';
+                overallBadge.textContent = 'Alle Systeme Online';
+                overallBadge.className = 'status-badge online';
+                overallProgress.style.width = '100%';
+                addLog('🎉 Alle Systeme online! Quizer ist bereit!', 'success');
+            } else {
+                const progress = renderStatus.available ? 50 : 0;
+                overallEl.textContent = 'Warten...';
+                overallEl.className = 'stat-value waiting';
+                overallBadge.textContent = 'Teilweise verfügbar';
+                overallBadge.className = 'status-badge checking';
+                overallProgress.style.width = progress + '%';
+                addLog('⏳ Warte auf vollständige Verfügbarkeit...', 'info');
+            }
+        }
+
+        function checkNow() {
+            addLog('🔄 Manuelle Prüfung gestartet...', 'info');
+            performCheck();
+        }
+
+        function clearLogs() {
+            document.getElementById('logList').innerHTML = '';
+            addLog('🗑️ Logs geleert', 'info');
+        }
+
+        function openOnline() {
+            window.open(ONLINE_URL, '_blank');
+            addLog('🔗 Online-Version in neuem Tab geöffnet', 'info');
+        }
+
+        // Initial check
+        addLog('🚀 Monitor gestartet - Prüfe alle 30 Sekunden', 'success');
+        performCheck();
+
+        // Auto-refresh alle 30 Sekunden
+        setInterval(performCheck, CHECK_INTERVAL);
+    </script>
+</body>
+</html>

@@ -24,6 +24,7 @@ function PlayQuiz() {
   const [currentRank, setCurrentRank] = useState(null)
   const [totalPlayers, setTotalPlayers] = useState(0)
   const [pointsNotification, setPointsNotification] = useState(null)
+  const [forceUpdate, setForceUpdate] = useState(0)
   const scoreRef = useRef(0)
 
   useEffect(() => {
@@ -173,24 +174,54 @@ function PlayQuiz() {
 
       if (data.playerIds === 'all' || data.playerId === socket.id) {
         console.log('✅ Unlocking buzzer for this player')
-        setBuzzerLocked(false)
-        setBuzzerPressed(false)
+
+        // Use functional updates to ensure latest state
+        setBuzzerLocked(prev => {
+          console.log('setBuzzerLocked: prev =', prev, '→ new = false')
+          return false
+        })
+        setBuzzerPressed(prev => {
+          console.log('setBuzzerPressed: prev =', prev, '→ new = false')
+          return false
+        })
+
+        // Force a re-render to ensure UI updates
+        setForceUpdate(prev => prev + 1)
+
+        // Verify state after update
+        setTimeout(() => {
+          console.log('🔍 State should now be updated - UI should show BUZZER button active')
+        }, 100)
+      } else {
+        console.log('❌ Event not for this player')
       }
     })
 
     socket.on('player-score-updated', (data) => {
-      console.log('Score updated:', data)
+      console.log('📊 Score updated:', data)
       if (data.playerId === socket.id) {
         const oldScore = scoreRef.current
-        setScore(data.newScore)
+        console.log(`💰 Updating score: ${oldScore} → ${data.newScore}`)
+
+        setScore(prev => {
+          console.log('setScore: prev =', prev, '→ new =', data.newScore)
+          return data.newScore
+        })
+
         scoreRef.current = data.newScore
         const diff = data.newScore - oldScore
+
         // Zeige Benachrichtigung
         setPointsNotification({
           points: diff,
           type: diff > 0 ? 'positive' : 'negative'
         })
         setTimeout(() => setPointsNotification(null), 3000)
+
+        // Force re-render
+        setForceUpdate(prev => prev + 1)
+
+        console.log('✅ Score update complete, diff:', diff)
       }
     })
 
@@ -246,11 +277,16 @@ function PlayQuiz() {
   }, [navigate, quizId])
 
   useEffect(() => {
+    // Don't run timer for buzzer questions
+    if (currentQuestion?.type === 'buzzer') {
+      return
+    }
+
     if (gameState === 'question' && timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
       return () => clearTimeout(timer)
     }
-  }, [timeLeft, gameState])
+  }, [timeLeft, gameState, currentQuestion])
 
   const handleAnswer = (index) => {
     if (selectedAnswer !== null) return

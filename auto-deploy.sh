@@ -89,7 +89,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🌐 Deine Quiz-App ist jetzt ONLINE unter:"
     echo ""
-    echo "   🔗 http://if0-39705173.infinityfreeapp.com/Quiz/"
+    echo "   🔗 http://sound77.infinityfreeapp.com/Quiz/"
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""

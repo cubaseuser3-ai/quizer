@@ -6,6 +6,10 @@ import cors from 'cors'
 const app = express()
 const httpServer = createServer(app)
 
+// Server version - update this when deploying changes
+const SERVER_VERSION = '1.0.1' // Buzzer unlock fix
+const SERVER_BUILD_TIME = new Date().toISOString()
+
 app.use(cors())
 app.use(express.json())
 
@@ -14,18 +18,32 @@ app.get('/', (req, res) => {
   res.json({
     status: 'OK',
     message: 'MyTech Quizer Backend is running',
+    version: SERVER_VERSION,
+    buildTime: SERVER_BUILD_TIME,
     activeRooms: gameRooms.size,
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    uptimeFormatted: formatUptime(process.uptime())
   })
 })
 
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
+    version: SERVER_VERSION,
+    buildTime: SERVER_BUILD_TIME,
     activeRooms: gameRooms.size,
-    uptime: process.uptime()
+    uptime: process.uptime(),
+    uptimeFormatted: formatUptime(process.uptime())
   })
 })
+
+// Helper function to format uptime
+function formatUptime(seconds) {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = Math.floor(seconds % 60)
+  return `${hours}h ${minutes}m ${secs}s`
+}
 
 const io = new Server(httpServer, {
   cors: {
