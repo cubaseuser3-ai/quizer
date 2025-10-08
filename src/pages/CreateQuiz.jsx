@@ -144,7 +144,9 @@ function CreateQuiz() {
     timeLimit: 30,
     timeMode: 'fixed', // 'fixed', 'waitAll', 'unlimited'
     maxTimeout: 60, // Nur für 'waitAll'
-    image: '' // Für Bild-Upload
+    image: '', // Für Bild-Upload
+    imageRevealAnimation: 'none', // Animation type: 'none', 'blur', 'pixelate', 'zoom', 'fade'
+    imageRevealDuration: 5 // Duration in seconds
   })
 
   const addQuestion = () => {
@@ -158,7 +160,10 @@ function CreateQuiz() {
       points: 100,
       timeLimit: 30,
       timeMode: 'fixed',
-      maxTimeout: 60
+      maxTimeout: 60,
+      image: '',
+      imageRevealAnimation: 'none',
+      imageRevealDuration: 5
     })
   }
 
@@ -696,6 +701,56 @@ function CreateQuiz() {
                 <small style={{ display: 'block', color: '#64748b', fontSize: '13px', marginTop: '8px' }}>
                   Maximal 2MB • JPG, PNG, GIF, WebP
                 </small>
+
+                {/* Bild-Aufdeckanimationen */}
+                {currentQuestion.image && (
+                  <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                    <h4 style={{ marginBottom: '12px', fontSize: '15px', fontWeight: '700', color: '#1e293b' }}>
+                      🎬 Bild-Aufdeckanimation
+                    </h4>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
+                        Animations-Typ:
+                      </label>
+                      <select
+                        value={currentQuestion.imageRevealAnimation || 'none'}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, imageRevealAnimation: e.target.value })}
+                        style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px' }}
+                      >
+                        <option value="none">Keine Animation</option>
+                        <option value="blur">🌫️ Unscharf → Scharf (Blur)</option>
+                        <option value="pixelate">🧩 Verpixelt → Klar (Pixelate)</option>
+                        <option value="zoom">🔍 Vergrößert → Normal (Zoom)</option>
+                        <option value="fade">✨ Ausblenden → Einblenden (Fade)</option>
+                        <option value="scramble">🔀 Verzerrt → Normal (Scramble)</option>
+                      </select>
+                    </div>
+
+                    {currentQuestion.imageRevealAnimation && currentQuestion.imageRevealAnimation !== 'none' && (
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', fontSize: '14px' }}>
+                          Animations-Dauer: {currentQuestion.imageRevealDuration || 5} Sekunden
+                        </label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="30"
+                          value={currentQuestion.imageRevealDuration || 5}
+                          onChange={(e) => setCurrentQuestion({ ...currentQuestion, imageRevealDuration: parseInt(e.target.value) })}
+                          style={{ width: '100%' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                          <span>1s</span>
+                          <span>30s</span>
+                        </div>
+                        <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px', lineHeight: '1.5' }}>
+                          💡 Das Bild wird während dieser Zeit langsam aufgedeckt
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {currentQuestion.type === 'multiple' && (

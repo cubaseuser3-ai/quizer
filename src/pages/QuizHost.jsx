@@ -4,6 +4,7 @@ import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLi
 import { QRCodeSVG } from 'qrcode.react'
 import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import ImageReveal from '../components/ImageReveal'
 import socket from '../socket'
 import { createConfetti } from '../utils/confetti'
 import './QuizHost.css'
@@ -114,6 +115,15 @@ function QuizHost() {
       }])
     })
 
+    socket.on('player-score-updated', (data) => {
+      console.log('Player score updated:', data.playerName, data.newScore)
+      setPlayers(prev => prev.map(p =>
+        p.id === data.playerId
+          ? { ...p, score: data.newScore }
+          : p
+      ))
+    })
+
     // Cleanup
     return () => {
       socket.off('room-created')
@@ -121,6 +131,7 @@ function QuizHost() {
       socket.off('player-left')
       socket.off('player-answered')
       socket.off('buzzer-pressed')
+      socket.off('player-score-updated')
       socket.disconnect()
     }
   }, [quizId, navigate])
@@ -258,13 +269,18 @@ function QuizHost() {
 
   const handleRestartQuiz = () => {
     if (window.confirm('🔄 Quiz neu starten?\n\nAlle Punkte werden zurückgesetzt und das Quiz beginnt von vorne.')) {
+      // Send restart event to server
+      socket.emit('restart-game', { roomCode: joinCode })
+
+      // Update local state
       setGameState('lobby')
       setCurrentQuestionIndex(0)
       setPlayers(players.map(p => ({ ...p, score: 0, hasAnswered: false, correct: false })))
       setTimeLeft(0)
       setShowAnswers(false)
-      // Notify players
-      socket.emit('game-restarted', { roomCode: joinCode })
+      setBuzzerPresses([])
+      setBuzzerLockedPlayers([])
+      setPlayersWhoGotPoints([])
     }
   }
 
@@ -573,16 +589,12 @@ function QuizHost() {
 
             {currentQuestion.image && (
               <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                <img
+                <ImageReveal
                   src={currentQuestion.image}
                   alt="Question"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '400px',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                    objectFit: 'contain'
-                  }}
+                  animation={currentQuestion.imageRevealAnimation || 'none'}
+                  duration={currentQuestion.imageRevealDuration || 5}
+                  style={{ margin: '20px 0' }}
                 />
               </div>
             )}

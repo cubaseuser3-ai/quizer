@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import ImageReveal from '../components/ImageReveal'
 import socket from '../socket'
 import './PlayQuiz.css'
 
@@ -448,16 +449,12 @@ function PlayQuiz() {
 
             {currentQuestion.image && (
               <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                <img
+                <ImageReveal
                   src={currentQuestion.image}
                   alt="Question"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '300px',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    objectFit: 'contain'
-                  }}
+                  animation={currentQuestion.imageRevealAnimation || 'none'}
+                  duration={currentQuestion.imageRevealDuration || 5}
+                  style={{ margin: '20px 0' }}
                 />
               </div>
             )}

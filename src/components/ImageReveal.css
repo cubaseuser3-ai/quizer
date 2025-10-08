@@ -1,0 +1,17 @@
+.image-reveal-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.image-reveal {
+  will-change: filter, transform, opacity;
+}
+
+/* Pixelated rendering for old-school effect */
+.image-reveal.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}

@@ -7,7 +7,7 @@ const app = express()
 const httpServer = createServer(app)
 
 // Server version - update this when deploying changes
-const SERVER_VERSION = '1.0.1' // Buzzer unlock fix
+const SERVER_VERSION = '1.1.0' // Game restart fix + Image reveal animations
 const SERVER_BUILD_TIME = new Date().toISOString()
 
 app.use(cors())
@@ -367,7 +367,10 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.id === playerId)
     if (!player) return
 
+    const oldScore = player.score
     player.score = Math.max(0, player.score + points)
+
+    console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (${oldScore} → ${player.score})`)
 
     // Notify all players about updated score
     io.to(roomCode).emit('player-score-updated', {
@@ -382,8 +385,37 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('leaderboard-update', {
       players: sortedPlayers
     })
+  })
 
-    console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (new total: ${player.score})`)
+  // Quiz neu starten
+  socket.on('restart-game', (data) => {
+    const { roomCode } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room || room.host !== socket.id) {
+      socket.emit('error', { message: 'Unauthorized' })
+      return
+    }
+
+    // Reset game state
+    room.state = 'lobby'
+    room.currentQuestion = 0
+    room.questionAnswers = []
+
+    // Reset all player scores
+    room.players.forEach(player => {
+      player.score = 0
+      player.hasAnswered = false
+      player.correct = false
+      player.ready = false
+    })
+
+    // Notify all players about game restart
+    io.to(roomCode).emit('game-restarted', {
+      players: room.players
+    })
+
+    console.log(`Game restarted in room ${roomCode}`)
   })
 
   // Buzzer freigeben
