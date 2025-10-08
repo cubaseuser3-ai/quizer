@@ -1,0 +1,39 @@
+{
+  "test": "LOCAL",
+  "url": "http://localhost:5173/Quiz",
+  "quiz_id": "buzzer-test-1759881539138",
+  "logs_count": 2,
+  "errors_count": 2,
+  "warnings_count": 0,
+  "body_length": 282,
+  "has_question": false,
+  "all_logs": [
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=815w0obr - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759881546342
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=817nrt9x - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759881546342
+    }
+  ],
+  "errors": [
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=815w0obr - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759881546342
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=817nrt9x - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759881546342
+    }
+  ],
+  "critical_errors": []
+}

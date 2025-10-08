@@ -564,13 +564,12 @@ io.on('connection', (socket) => {
 const PORT = 3000
 
 // Start mDNS service for mtquiz.local
-const bonjour = new Bonjour()
+const bonjour = Bonjour.default ? new Bonjour.default() : new Bonjour()
 
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 MyTech Quizer Local Server`)
   console.log(`📍 Running on: http://localhost:${PORT}`)
   console.log(`📍 Network: http://mtquiz.local:${PORT}`)
-  console.log(`💾 Database: ${dbPath}`)
 
   // Publish mDNS service
   bonjour.publish({

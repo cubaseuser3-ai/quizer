@@ -139,19 +139,39 @@ function QuizHost() {
   }
 
   const startGame = () => {
-    if (players.length === 0) {
-      alert('Warte auf Spieler!')
-      return
-    }
-    setGameState('question')
-    const question = quiz.questions[currentQuestionIndex]
-    setTimeLeft(question.timeLimit)
-    setShowAnswers(false)
-    setBuzzerPresses([]) // Reset buzzer presses
-    setBuzzerLockedPlayers([]) // Unlock all buzzers at start
+    try {
+      console.log('startGame called', { quiz, players: players.length, currentQuestionIndex })
 
-    // Emit game start to all players
-    socket.emit('start-game', { roomCode: joinCode })
+      if (players.length === 0) {
+        alert('Warte auf Spieler!')
+        return
+      }
+
+      // Safety check: Quiz muss geladen sein
+      if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+        console.error('Cannot start game: Quiz not loaded', quiz)
+        alert('Fehler: Quiz wurde noch nicht geladen!')
+        return
+      }
+
+      console.log('Setting game state to question...')
+      setGameState('question')
+
+      const question = quiz.questions[currentQuestionIndex]
+      console.log('Question loaded:', question)
+
+      setTimeLeft(question.timeLimit)
+      setShowAnswers(false)
+      setBuzzerPresses([]) // Reset buzzer presses
+      setBuzzerLockedPlayers([]) // Unlock all buzzers at start
+
+      // Emit game start to all players
+      socket.emit('start-game', { roomCode: joinCode })
+      console.log('Game started successfully')
+    } catch (error) {
+      console.error('❌ ERROR in startGame:', error)
+      alert('Fehler beim Starten: ' + error.message)
+    }
   }
 
   const nextQuestion = () => {
@@ -326,8 +346,15 @@ function QuizHost() {
     return <div className="loading">Lade Quiz...</div>
   }
 
-  const currentQuestion = quiz.questions[currentQuestionIndex]
+  // currentQuestion immer setzen wenn möglich
+  const currentQuestion = quiz?.questions?.[currentQuestionIndex] || null
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score)
+
+  // Safety check: Wenn gameState 'question' oder 'results' ist aber quiz.questions noch nicht geladen
+  if ((gameState === 'question' || gameState === 'results') && !currentQuestion) {
+    console.error('Quiz questions not loaded yet', { quiz, currentQuestionIndex, gameState })
+    return <div className="loading">Lade Frage...</div>
+  }
 
   return (
     <div className="quiz-host">
@@ -453,12 +480,12 @@ function QuizHost() {
 
             <div className="quiz-info-box card animate-fadeIn">
               <div className="info-item">
-                <span className="info-value">{quiz.questions.length}</span>
+                <span className="info-value">{quiz?.questions?.length || 0}</span>
                 <span className="info-label">Fragen</span>
               </div>
               <div className="info-item">
                 <span className="info-value">
-                  {quiz.questions.reduce((sum, q) => sum + q.points, 0)}
+                  {quiz?.questions?.reduce((sum, q) => sum + q.points, 0) || 0}
                 </span>
                 <span className="info-label">Punkte</span>
               </div>
@@ -467,11 +494,11 @@ function QuizHost() {
         </div>
       )}
 
-      {gameState === 'question' && (
+      {gameState === 'question' && currentQuestion && (
         <div className="question-screen">
           <div className="question-header">
             <div className="question-progress">
-              Frage {currentQuestionIndex + 1} / {quiz.questions.length}
+              Frage {currentQuestionIndex + 1} / {quiz?.questions?.length || 0}
             </div>
             <div className="timer">
               <div className="timer-circle" style={{
@@ -600,7 +627,7 @@ function QuizHost() {
                 <div style={{ marginTop: '24px', textAlign: 'center' }}>
                   <button
                     className="btn btn-primary btn-lg"
-                    onClick={handleNextQuestion}
+                    onClick={nextQuestion}
                     style={{ padding: '16px 48px', fontSize: '18px', fontWeight: '700' }}
                   >
                     ➡️ Nächste Frage

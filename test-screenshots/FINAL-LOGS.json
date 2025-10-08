@@ -1,0 +1,161 @@
+{
+  "quiz_id": "final-test-1759882363555",
+  "logs_count": 20,
+  "errors_count": 5,
+  "body_length": 282,
+  "has_buzzer_question": false,
+  "all_logs": [
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 494:8 \"[vite] connecting...\"",
+      "source": "console-api",
+      "timestamp": 1759882360346
+    },
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 617:14 \"[vite] connected.\"",
+      "source": "console-api",
+      "timestamp": 1759882360363
+    },
+    {
+      "level": "INFO",
+      "message": "http://localhost:5173/Quiz/node_modules/.vite/deps/chunk-PJEEZAML.js?v=99b0dde8 21550:24 \"%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools\" \"font-weight:bold\"",
+      "source": "console-api",
+      "timestamp": 1759882360419
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.\"",
+      "source": "console-api",
+      "timestamp": 1759882361491
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.\"",
+      "source": "console-api",
+      "timestamp": 1759882361491
+    },
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 494:8 \"[vite] connecting...\"",
+      "source": "console-api",
+      "timestamp": 1759882361510
+    },
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 617:14 \"[vite] connected.\"",
+      "source": "console-api",
+      "timestamp": 1759882361513
+    },
+    {
+      "level": "INFO",
+      "message": "http://localhost:5173/Quiz/node_modules/.vite/deps/chunk-PJEEZAML.js?v=99b0dde8 21550:24 \"%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools\" \"font-weight:bold\"",
+      "source": "console-api",
+      "timestamp": 1759882361520
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.\"",
+      "source": "console-api",
+      "timestamp": 1759882361532
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.\"",
+      "source": "console-api",
+      "timestamp": 1759882361532
+    },
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 494:8 \"[vite] connecting...\"",
+      "source": "console-api",
+      "timestamp": 1759882363573
+    },
+    {
+      "level": "DEBUG",
+      "message": "http://localhost:5173/Quiz/@vite/client 617:14 \"[vite] connected.\"",
+      "source": "console-api",
+      "timestamp": 1759882363578
+    },
+    {
+      "level": "INFO",
+      "message": "http://localhost:5173/Quiz/node_modules/.vite/deps/chunk-PJEEZAML.js?v=99b0dde8 21550:24 \"%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools\" \"font-weight:bold\"",
+      "source": "console-api",
+      "timestamp": 1759882363586
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.\"",
+      "source": "console-api",
+      "timestamp": 1759882363595
+    },
+    {
+      "level": "WARNING",
+      "message": "http://localhost:5173/Quiz/src/utils/consoleLogger.js 28:27 \"\u26a0\ufe0f React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.\"",
+      "source": "console-api",
+      "timestamp": 1759882363596
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iqizkd5 - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882363624
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iqiy53y - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882363625
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8irdpb5d - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882366632
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iswbwn6 - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882366672
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iwrdtfr - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882371694
+    }
+  ],
+  "errors": [
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iqizkd5 - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882363624
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iqiy53y - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882363625
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8irdpb5d - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882366632
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iswbwn6 - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882366672
+    },
+    {
+      "level": "SEVERE",
+      "message": "http://localhost:3001/socket.io/?EIO=4&transport=polling&t=8iwrdtfr - Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network",
+      "timestamp": 1759882371694
+    }
+  ]
+}

@@ -1,0 +1,207 @@
+{
+  "quiz": {
+    "id": "buzzer-test-1759883736819",
+    "title": "BUZZER TEST QUIZ",
+    "questions": [
+      {
+        "type": "buzzer",
+        "question": "Was ist die Hauptstadt von Deutschland?",
+        "points": 100,
+        "timeLimit": 30
+      },
+      {
+        "type": "buzzer",
+        "question": "Wie viele Bundesländer hat Deutschland?",
+        "points": 50,
+        "timeLimit": 20
+      }
+    ],
+    "createdAt": "2025-10-08T00:35:36.819Z"
+  },
+  "roomCode": "736819",
+  "playerCount": 1,
+  "host": {
+    "logs": [
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:35:35.148Z",
+        "source": "HOST"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:35:35.153Z",
+        "source": "HOST"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:35:35.197Z",
+        "source": "HOST"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:35:35.306Z",
+        "source": "HOST"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:35:35.306Z",
+        "source": "HOST"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:35:36.882Z",
+        "source": "HOST"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:35:36.885Z",
+        "source": "HOST"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:35:36.893Z",
+        "source": "HOST"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:35:36.949Z",
+        "source": "HOST"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:35:36.949Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "✅ Verbunden mit Server: QK0erII9Rw5u-qfmAABa",
+        "timestamp": "2025-10-08T00:35:36.966Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Room created: 736819",
+        "timestamp": "2025-10-08T00:35:36.967Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Room created: 736819",
+        "timestamp": "2025-10-08T00:35:36.967Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Player joined: {id: N0P_gIU0EOaYuZJJAABd, name: TestUser, avatar: 👤, score: 0, ready: false}",
+        "timestamp": "2025-10-08T00:35:41.835Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "startGame called {quiz: Object, players: 1, currentQuestionIndex: 0}",
+        "timestamp": "2025-10-08T00:35:44.100Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Setting game state to question...",
+        "timestamp": "2025-10-08T00:35:44.100Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Question loaded: {type: buzzer, question: Was ist die Hauptstadt von Deutschland?, points: 100, timeLimit: 30}",
+        "timestamp": "2025-10-08T00:35:44.100Z",
+        "source": "HOST"
+      },
+      {
+        "type": "log",
+        "text": "Game started successfully",
+        "timestamp": "2025-10-08T00:35:44.100Z",
+        "source": "HOST"
+      }
+    ],
+    "hasQuestion": true,
+    "bodyLength": 265,
+    "errors": []
+  },
+  "user": {
+    "logs": [
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:35:39.709Z",
+        "source": "USER"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:35:39.727Z",
+        "source": "USER"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:35:39.760Z",
+        "source": "USER"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:35:39.822Z",
+        "source": "USER"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:35:39.822Z",
+        "source": "USER"
+      },
+      {
+        "type": "log",
+        "text": "✅ Verbunden mit Server: N0P_gIU0EOaYuZJJAABd",
+        "timestamp": "2025-10-08T00:35:41.833Z",
+        "source": "USER"
+      },
+      {
+        "type": "log",
+        "text": "Player joined notification: {player: Object, players: Array(1)}",
+        "timestamp": "2025-10-08T00:35:41.835Z",
+        "source": "USER"
+      },
+      {
+        "type": "log",
+        "text": "Room state: {state: lobby, players: Array(1), currentQuestion: 0, lateJoin: false}",
+        "timestamp": "2025-10-08T00:35:41.835Z",
+        "source": "USER"
+      },
+      {
+        "type": "log",
+        "text": "Room state: {state: lobby, players: Array(1), currentQuestion: 0, reconnected: true}",
+        "timestamp": "2025-10-08T00:35:41.838Z",
+        "source": "USER"
+      },
+      {
+        "type": "log",
+        "text": "Game started: {question: Object, questionIndex: 0, totalQuestions: 2}",
+        "timestamp": "2025-10-08T00:35:44.101Z",
+        "source": "USER"
+      }
+    ],
+    "hasBuzzer": true,
+    "bodyLength": 134,
+    "errors": []
+  },
+  "pageErrors": [],
+  "timestamp": "2025-10-08T00:35:49.405Z"
+}

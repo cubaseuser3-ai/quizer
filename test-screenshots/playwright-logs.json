@@ -1,0 +1,180 @@
+{
+  "quizId": "playwright-test-1759883323688",
+  "roomCode": "323688",
+  "playerCount": 1,
+  "host": {
+    "logs": [
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:28:43.049Z"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:28:43.079Z"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:28:43.106Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:28:43.179Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:28:43.179Z"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:28:43.756Z"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:28:43.760Z"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:28:43.770Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:28:43.833Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:28:43.834Z"
+      },
+      {
+        "type": "log",
+        "text": "✅ Verbunden mit Server: Jmycrikkco_otoH-AABM",
+        "timestamp": "2025-10-08T00:28:43.846Z"
+      },
+      {
+        "type": "log",
+        "text": "Room created: 323688",
+        "timestamp": "2025-10-08T00:28:43.847Z"
+      },
+      {
+        "type": "log",
+        "text": "Room created: 323688",
+        "timestamp": "2025-10-08T00:28:43.849Z"
+      },
+      {
+        "type": "log",
+        "text": "Player joined: {id: _BuiWmJS02h1TJ6yAABP, name: TestUser, avatar: 👤, score: 0, ready: false}",
+        "timestamp": "2025-10-08T00:28:48.270Z"
+      },
+      {
+        "type": "log",
+        "text": "startGame called {quiz: Object, players: 1, currentQuestionIndex: 0}",
+        "timestamp": "2025-10-08T00:28:50.394Z"
+      },
+      {
+        "type": "log",
+        "text": "Setting game state to question...",
+        "timestamp": "2025-10-08T00:28:50.394Z"
+      },
+      {
+        "type": "log",
+        "text": "Question loaded: {type: buzzer, question: Was ist die Hauptstadt von Deutschland?, points: 100, timeLimit: 30}",
+        "timestamp": "2025-10-08T00:28:50.394Z"
+      },
+      {
+        "type": "log",
+        "text": "Game started successfully",
+        "timestamp": "2025-10-08T00:28:50.394Z"
+      },
+      {
+        "type": "error",
+        "text": "The above error occurred in the <QuizHost> component:\n\n    at QuizHost (http://localhost:5173/Quiz/src/pages/QuizHost.jsx?t=1759883312112:29:22)\n    at RenderedRoute (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4088:5)\n    at Routes (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4558:5)\n    at Router (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4501:15)\n    at BrowserRouter (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:5247:5)\n    at App\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+        "timestamp": "2025-10-08T00:28:50.399Z"
+      },
+      {
+        "type": "log",
+        "text": "❌ Verbindung getrennt",
+        "timestamp": "2025-10-08T00:28:50.441Z"
+      }
+    ],
+    "hasQuestion": false,
+    "bodyLength": 15,
+    "errors": [
+      {
+        "type": "error",
+        "text": "The above error occurred in the <QuizHost> component:\n\n    at QuizHost (http://localhost:5173/Quiz/src/pages/QuizHost.jsx?t=1759883312112:29:22)\n    at RenderedRoute (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4088:5)\n    at Routes (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4558:5)\n    at Router (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:4501:15)\n    at BrowserRouter (http://localhost:5173/Quiz/node_modules/.vite/deps/react-router-dom.js?v=99b0dde8:5247:5)\n    at App\n\nConsider adding an error boundary to your tree to customize error handling behavior.\nVisit https://reactjs.org/link/error-boundaries to learn more about error boundaries.",
+        "timestamp": "2025-10-08T00:28:50.399Z"
+      }
+    ]
+  },
+  "user": {
+    "logs": [
+      {
+        "type": "debug",
+        "text": "[vite] connecting...",
+        "timestamp": "2025-10-08T00:28:46.531Z"
+      },
+      {
+        "type": "debug",
+        "text": "[vite] connected.",
+        "timestamp": "2025-10-08T00:28:46.546Z"
+      },
+      {
+        "type": "info",
+        "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+        "timestamp": "2025-10-08T00:28:46.577Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.",
+        "timestamp": "2025-10-08T00:28:46.640Z"
+      },
+      {
+        "type": "warning",
+        "text": "⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.",
+        "timestamp": "2025-10-08T00:28:46.640Z"
+      },
+      {
+        "type": "log",
+        "text": "✅ Verbunden mit Server: _BuiWmJS02h1TJ6yAABP",
+        "timestamp": "2025-10-08T00:28:48.268Z"
+      },
+      {
+        "type": "log",
+        "text": "Player joined notification: {player: Object, players: Array(1)}",
+        "timestamp": "2025-10-08T00:28:48.278Z"
+      },
+      {
+        "type": "log",
+        "text": "Room state: {state: lobby, players: Array(1), currentQuestion: 0, lateJoin: false}",
+        "timestamp": "2025-10-08T00:28:48.280Z"
+      },
+      {
+        "type": "log",
+        "text": "Room state: {state: lobby, players: Array(1), currentQuestion: 0, reconnected: true}",
+        "timestamp": "2025-10-08T00:28:48.282Z"
+      },
+      {
+        "type": "log",
+        "text": "Game started: {question: Object, questionIndex: 0, totalQuestions: 1}",
+        "timestamp": "2025-10-08T00:28:50.395Z"
+      },
+      {
+        "type": "log",
+        "text": "❌ Verbindung getrennt",
+        "timestamp": "2025-10-08T00:28:50.514Z"
+      }
+    ],
+    "hasBuzzerButton": false,
+    "bodyLength": 245,
+    "errors": []
+  }
+}
