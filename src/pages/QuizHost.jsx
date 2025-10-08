@@ -30,6 +30,8 @@ function QuizHost() {
   const [buzzerEnabled, setBuzzerEnabled] = useState(true)
   const [buzzerLockedPlayers, setBuzzerLockedPlayers] = useState([])
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
+  const [playersWhoGotPoints, setPlayersWhoGotPoints] = useState([]) // Track who got points
+  const [showUnlockWarning, setShowUnlockWarning] = useState(false) // Warning modal
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -170,6 +172,7 @@ function QuizHost() {
       setShowAnswers(false)
       setBuzzerPresses([]) // Reset buzzer presses
       setBuzzerLockedPlayers([]) // Unlock all buzzers at start
+      setPlayersWhoGotPoints([]) // Reset points tracking
 
       // Unlock all buzzers for clients
       socket.emit('unlock-buzzers', {
@@ -198,6 +201,7 @@ function QuizHost() {
       setShowAnswers(false)
       setBuzzerPresses([]) // Reset buzzer presses
       setBuzzerLockedPlayers([]) // Unlock all buzzers
+      setPlayersWhoGotPoints([]) // Reset points tracking
 
       // Unlock all buzzers for clients
       socket.emit('unlock-buzzers', {
@@ -310,11 +314,29 @@ function QuizHost() {
 
   // Buzzer-Freigabe Funktionen
   const unlockAllBuzzers = () => {
+    // Check if there are players who buzzed but didn't get points
+    const playersWhoBuzzed = buzzerLockedPlayers
+    const playersWithoutPoints = playersWhoBuzzed.filter(
+      playerId => !playersWhoGotPoints.includes(playerId)
+    )
+
+    if (playersWithoutPoints.length > 0) {
+      // Show warning modal
+      setShowUnlockWarning(true)
+      return
+    }
+
+    // If everyone who buzzed got points, unlock directly
+    performUnlockAll()
+  }
+
+  const performUnlockAll = () => {
     console.log('🔓 unlockAllBuzzers() called')
     console.log('   Room code:', joinCode)
     console.log('   Current locked players:', buzzerLockedPlayers)
 
     setBuzzerLockedPlayers([])
+    setPlayersWhoGotPoints([]) // Reset for next question
 
     console.log('   Emitting unlock-buzzers event for ALL players')
     socket.emit('unlock-buzzers', {
@@ -323,6 +345,7 @@ function QuizHost() {
     })
 
     console.log('✅ unlock-buzzers event sent')
+    setShowUnlockWarning(false) // Close warning if open
   }
 
   const unlockBuzzerForPlayer = (playerId) => {
@@ -368,6 +391,9 @@ function QuizHost() {
     setPlayers(prev => prev.map(p =>
       p.id === playerId ? { ...p, score: (p.score || 0) + points } : p
     ))
+
+    // Track that this player got points
+    setPlayersWhoGotPoints(prev => [...prev, playerId])
 
     alert(`✅ ${playerName} erhält ${points} Punkte!`)
 
@@ -997,6 +1023,80 @@ function QuizHost() {
             <div className="modal-footer">
               <button className="btn btn-primary" onClick={() => setShowLeaderboardModal(false)}>
                 Schließen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Warning Modal: Players buzzed but no points given */}
+      {showUnlockWarning && (
+        <div className="points-modal-overlay" onClick={() => setShowUnlockWarning(false)}>
+          <div className="points-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="modal-header">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+                ⚠️ Achtung
+              </h2>
+              <button className="btn-icon" onClick={() => setShowUnlockWarning(false)}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '24px' }}>
+              <p style={{ fontSize: '16px', lineHeight: '1.6', marginBottom: '16px' }}>
+                Es gibt Spieler die gebuzzert haben, aber noch <strong>keine Punkte erhalten</strong> haben.
+              </p>
+
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                padding: '16px',
+                borderRadius: '12px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: '#92400e', marginBottom: '8px' }}>
+                  Spieler ohne Punkte:
+                </div>
+                {buzzerLockedPlayers
+                  .filter(playerId => !playersWhoGotPoints.includes(playerId))
+                  .map(playerId => {
+                    const player = players.find(p => p.id === playerId)
+                    return player ? (
+                      <div key={playerId} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px',
+                        background: 'white',
+                        borderRadius: '8px',
+                        marginBottom: '4px',
+                        color: '#92400e'
+                      }}>
+                        <span style={{ fontSize: '20px' }}>{player.avatar}</span>
+                        <span style={{ fontWeight: '600' }}>{player.name}</span>
+                      </div>
+                    ) : null
+                  })}
+              </div>
+
+              <p style={{ fontSize: '14px', color: '#6b7280' }}>
+                Möchtest du trotzdem alle Buzzer freigeben?
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', gap: '12px' }}>
+              <button
+                className="btn"
+                onClick={() => setShowUnlockWarning(false)}
+                style={{ flex: 1 }}
+              >
+                Abbrechen
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={performUnlockAll}
+                style={{ flex: 1 }}
+              >
+                Trotzdem freigeben
               </button>
             </div>
           </div>
