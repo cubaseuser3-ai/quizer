@@ -24,7 +24,7 @@ function QuizHost() {
   const [isResizing, setIsResizing] = useState(false)
   const [showPointsModal, setShowPointsModal] = useState(false)
   const [selectedPlayer, setSelectedPlayer] = useState(null)
-  const [pointsToAdd, setPointsToAdd] = useState(0)
+  const [pointsToAdd, setPointsToAdd] = useState('')
   const [showRankingTransition, setShowRankingTransition] = useState(false)
   const [previousRankings, setPreviousRankings] = useState([])
   const [buzzerEnabled, setBuzzerEnabled] = useState(true)
@@ -309,7 +309,7 @@ function QuizHost() {
 
     setShowPointsModal(false)
     setSelectedPlayer(null)
-    setPointsToAdd(0)
+    setPointsToAdd('')
   }
 
   // Buzzer-Freigabe Funktionen
@@ -811,101 +811,88 @@ function QuizHost() {
 
       {gameState === 'final' && (
         <div className="final-screen">
+          {/* Controls rechts oben */}
+          <div className="final-controls">
+            <button className="btn btn-warning" onClick={handleRestartQuiz}>
+              <RotateCcw size={20} />
+              Neustart
+            </button>
+            <button className="btn btn-danger" onClick={handleEndQuiz}>
+              <X size={20} />
+              Beenden
+            </button>
+          </div>
+
           <div className="final-content">
             <div className="trophy-icon animate-bounce">
               <Trophy size={80} />
             </div>
             <h1 className="animate-fadeIn">Quiz Beendet!</h1>
 
-            {/* Podium mit Top 3 */}
-            {sortedPlayers.length >= 3 && (
-              <div className="podium-container">
-                {/* 2. Platz */}
-                <div className="podium-place second">
-                  <div className="podium-player">
-                    <div className="podium-avatar">{sortedPlayers[1].avatar}</div>
-                    <div className="podium-name">{sortedPlayers[1].name}</div>
-                    <div className="podium-score">{sortedPlayers[1].score} Punkte</div>
-                  </div>
-                  <div className="podium-rank">
-                    <div className="podium-medal">🥈</div>
-                    <div className="podium-position">2</div>
-                  </div>
-                </div>
-
-                {/* 1. Platz */}
-                <div className="podium-place first">
-                  <div className="podium-player">
-                    <div className="podium-avatar">{sortedPlayers[0].avatar}</div>
-                    <div className="podium-name">{sortedPlayers[0].name}</div>
-                    <div className="podium-score">{sortedPlayers[0].score} Punkte</div>
-                  </div>
-                  <div className="podium-rank">
-                    <div className="podium-medal">🥇</div>
-                    <div className="podium-position">1</div>
-                  </div>
-                </div>
-
-                {/* 3. Platz */}
-                <div className="podium-place third">
-                  <div className="podium-player">
-                    <div className="podium-avatar">{sortedPlayers[2].avatar}</div>
-                    <div className="podium-name">{sortedPlayers[2].name}</div>
-                    <div className="podium-score">{sortedPlayers[2].score} Punkte</div>
-                  </div>
-                  <div className="podium-rank">
-                    <div className="podium-medal">🥉</div>
-                    <div className="podium-position">3</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Restliche Spieler */}
-            {sortedPlayers.length > 3 && (
-              <div className="remaining-players" style={{ marginTop: '40px', width: '100%', maxWidth: '600px' }}>
-                <h3 style={{ color: 'white', marginBottom: '20px', fontSize: '24px' }}>Weitere Teilnehmer:</h3>
-                {sortedPlayers.slice(3).map((player, index) => (
-                  <div key={player.id} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    padding: '16px',
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    borderRadius: '12px',
-                    marginBottom: '12px'
-                  }}>
-                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#64748b', minWidth: '40px' }}>
-                      {index + 4}
+            {/* Komplette Rangliste */}
+            <div className="final-leaderboard">
+              <h2 style={{ color: 'white', marginBottom: '24px', fontSize: '28px', fontWeight: '800' }}>
+                🏆 Endergebnis
+              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '700px' }}>
+                {sortedPlayers.map((player, index) => (
+                  <div
+                    key={player.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '20px',
+                      padding: '20px',
+                      background: index === 0
+                        ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                        : index === 1
+                        ? 'linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%)'
+                        : index === 2
+                        ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
+                        : 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '16px',
+                      boxShadow: index < 3 ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.15)',
+                      color: index < 3 ? 'white' : '#1e293b',
+                      transform: index === 0 ? 'scale(1.05)' : 'scale(1)',
+                      border: index === 0 ? '3px solid rgba(255,255,255,0.5)' : 'none'
+                    }}
+                  >
+                    <div style={{
+                      fontSize: index < 3 ? '40px' : '32px',
+                      fontWeight: '900',
+                      minWidth: '60px',
+                      textAlign: 'center'
+                    }}>
+                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                     </div>
-                    <div style={{ fontSize: '32px' }}>{player.avatar}</div>
+                    <div style={{ fontSize: index < 3 ? '40px' : '32px' }}>{player.avatar}</div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '700', fontSize: '18px', color: '#1e293b' }}>{player.name}</div>
+                      <div style={{
+                        fontSize: index < 3 ? '24px' : '20px',
+                        fontWeight: '800'
+                      }}>
+                        {player.name}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '24px', fontWeight: '900', color: '#6366f1' }}>
+                    <div style={{
+                      fontSize: index < 3 ? '32px' : '24px',
+                      fontWeight: '900',
+                      background: index < 3 ? 'rgba(255,255,255,0.3)' : 'rgba(99,102,241,0.1)',
+                      padding: '8px 20px',
+                      borderRadius: '12px'
+                    }}>
                       {player.score}
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-
-            <div className="final-actions">
-              <button className="btn btn-outline btn-lg" onClick={handleRestartQuiz}>
-                <RotateCcw size={20} />
-                Nochmal spielen
-              </button>
-              <button className="btn btn-primary btn-lg" onClick={handleEndQuiz}>
-                <X size={20} />
-                Quiz beenden
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Host-Kontroll-Buttons (immer sichtbar außer in Lobby) */}
-      {gameState !== 'lobby' && (
+      {/* Host-Kontroll-Buttons (immer sichtbar außer in Lobby und Final) */}
+      {gameState !== 'lobby' && gameState !== 'final' && (
         <div className="host-controls">
           <button className="btn btn-success" onClick={() => setShowLeaderboardModal(true)}>
             <Trophy size={20} />
@@ -924,7 +911,7 @@ function QuizHost() {
 
       {/* Punkte-Anpass-Modal */}
       {showPointsModal && selectedPlayer && (
-        <div className="points-modal-overlay" onClick={() => setShowPointsModal(false)}>
+        <div className="points-modal-overlay" onClick={() => { setShowPointsModal(false); setPointsToAdd(''); }}>
           <div className="points-modal" onClick={(e) => e.stopPropagation()}>
             <h2>Punkte anpassen</h2>
 
@@ -941,9 +928,10 @@ function QuizHost() {
               <input
                 type="number"
                 value={pointsToAdd}
-                onChange={(e) => setPointsToAdd(Number(e.target.value))}
+                onChange={(e) => setPointsToAdd(e.target.value === '' ? '' : Number(e.target.value))}
                 placeholder="z.B. 100 oder -50"
                 autoFocus
+                onFocus={(e) => e.target.select()}
               />
 
               <div className="points-quick-buttons">
@@ -955,7 +943,7 @@ function QuizHost() {
             </div>
 
             <div className="points-modal-actions">
-              <button className="btn btn-outline" onClick={() => setShowPointsModal(false)}>
+              <button className="btn btn-outline" onClick={() => { setShowPointsModal(false); setPointsToAdd(''); }}>
                 Abbrechen
               </button>
               <button className="btn btn-primary" onClick={adjustPlayerPoints}>
