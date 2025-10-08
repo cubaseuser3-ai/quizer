@@ -339,6 +339,60 @@ io.on('connection', (socket) => {
     }
   })
 
+  // Punkte manuell anpassen
+  socket.on('adjust-player-points', (data) => {
+    const { roomCode, playerId, points } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room) return
+
+    const player = room.players.find(p => p.id === playerId)
+    if (!player) return
+
+    player.score = Math.max(0, player.score + points)
+
+    // Notify all players about updated score
+    io.to(roomCode).emit('player-score-updated', {
+      playerId: player.id,
+      playerName: player.name,
+      newScore: player.score,
+      pointsAdjusted: points
+    })
+
+    // Sende aktualisierte Rangliste an alle Spieler
+    const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score)
+    io.to(roomCode).emit('leaderboard-update', {
+      players: sortedPlayers
+    })
+
+    console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (new total: ${player.score})`)
+  })
+
+  // Buzzer freigeben
+  socket.on('unlock-buzzers', (data) => {
+    const { roomCode, playerIds } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room) return
+
+    console.log(`🔓 Server received unlock-buzzers:`, { roomCode, playerIds })
+
+    if (playerIds === 'all') {
+      // Alle Buzzer freigeben
+      io.to(roomCode).emit('buzzer-unlocked', { playerIds: 'all' })
+      console.log(`✅ All buzzers unlocked in room ${roomCode}`)
+    } else if (Array.isArray(playerIds)) {
+      // Spezifische Buzzer freigeben
+      playerIds.forEach(playerId => {
+        const player = room.players.find(p => p.id === playerId)
+        if (player) {
+          io.to(player.id).emit('buzzer-unlocked', { playerId })
+          console.log(`✅ Buzzer unlocked for ${player.name}`)
+        }
+      })
+    }
+  })
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id)
@@ -365,58 +419,6 @@ io.on('connection', (socket) => {
         io.to(roomCode).emit('host-disconnected')
         gameRooms.delete(roomCode)
         console.log('Host disconnected, room closed:', roomCode)
-      }
-    })
-
-    // Punkte manuell anpassen
-    socket.on('adjust-player-points', (data) => {
-      const { roomCode, playerId, points } = data
-      const room = gameRooms.get(roomCode)
-
-      if (!room) return
-
-      const player = room.players.find(p => p.id === playerId)
-      if (!player) return
-
-      player.score = Math.max(0, player.score + points)
-
-      // Notify all players about updated score
-      io.to(roomCode).emit('player-score-updated', {
-        playerId: player.id,
-        playerName: player.name,
-        newScore: player.score,
-        pointsAdjusted: points
-      })
-
-      // Sende aktualisierte Rangliste an alle Spieler
-      const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score)
-      io.to(roomCode).emit('leaderboard-update', {
-        players: sortedPlayers
-      })
-
-      console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (new total: ${player.score})`)
-    })
-
-    // Buzzer freigeben
-    socket.on('unlock-buzzers', (data) => {
-      const { roomCode, playerIds } = data
-      const room = gameRooms.get(roomCode)
-
-      if (!room) return
-
-      if (playerIds === 'all') {
-        // Alle Buzzer freigeben
-        io.to(roomCode).emit('buzzer-unlocked', { playerIds: 'all' })
-        console.log(`All buzzers unlocked in room ${roomCode}`)
-      } else if (Array.isArray(playerIds)) {
-        // Spezifische Buzzer freigeben
-        playerIds.forEach(playerId => {
-          const player = room.players.find(p => p.id === playerId)
-          if (player) {
-            io.to(player.id).emit('buzzer-unlocked', { playerId })
-            console.log(`Buzzer unlocked for ${player.name}`)
-          }
-        })
       }
     })
   })

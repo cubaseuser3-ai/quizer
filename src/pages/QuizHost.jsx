@@ -124,13 +124,19 @@ function QuizHost() {
   }, [quizId, navigate])
 
   useEffect(() => {
+    // Don't run timer for buzzer questions
+    const currentQuestion = quiz?.questions[currentQuestionIndex]
+    if (currentQuestion?.type === 'buzzer') {
+      return
+    }
+
     if (gameState === 'question' && timeLeft > 0) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
       return () => clearTimeout(timer)
     } else if (gameState === 'question' && timeLeft === 0) {
       setShowAnswers(true)
     }
-  }, [timeLeft, gameState])
+  }, [timeLeft, gameState, quiz, currentQuestionIndex])
 
   const copyJoinCode = () => {
     navigator.clipboard.writeText(joinUrl)
@@ -165,6 +171,12 @@ function QuizHost() {
       setBuzzerPresses([]) // Reset buzzer presses
       setBuzzerLockedPlayers([]) // Unlock all buzzers at start
 
+      // Unlock all buzzers for clients
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: 'all'
+      })
+
       // Emit game start to all players
       socket.emit('start-game', { roomCode: joinCode })
       console.log('Game started successfully')
@@ -186,6 +198,12 @@ function QuizHost() {
       setShowAnswers(false)
       setBuzzerPresses([]) // Reset buzzer presses
       setBuzzerLockedPlayers([]) // Unlock all buzzers
+
+      // Unlock all buzzers for clients
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: 'all'
+      })
 
       // Reset player answer status
       setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false, responseTime: null, bonusPoints: 0 })))
@@ -292,19 +310,34 @@ function QuizHost() {
 
   // Buzzer-Freigabe Funktionen
   const unlockAllBuzzers = () => {
+    console.log('🔓 unlockAllBuzzers() called')
+    console.log('   Room code:', joinCode)
+    console.log('   Current locked players:', buzzerLockedPlayers)
+
     setBuzzerLockedPlayers([])
+
+    console.log('   Emitting unlock-buzzers event for ALL players')
     socket.emit('unlock-buzzers', {
       roomCode: joinCode,
       playerIds: 'all'
     })
+
+    console.log('✅ unlock-buzzers event sent')
   }
 
   const unlockBuzzerForPlayer = (playerId) => {
+    console.log('🔓 unlockBuzzerForPlayer() called for:', playerId)
+    console.log('   Room code:', joinCode)
+
     setBuzzerLockedPlayers(prev => prev.filter(id => id !== playerId))
+
+    console.log('   Emitting unlock-buzzers event for player:', playerId)
     socket.emit('unlock-buzzers', {
       roomCode: joinCode,
       playerIds: [playerId]
     })
+
+    console.log('✅ unlock-buzzers event sent for player:', playerId)
   }
 
   // Ranglisten-Animation vorbereiten
