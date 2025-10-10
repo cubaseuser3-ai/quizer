@@ -290,6 +290,20 @@ function QuizHost() {
   const showResults = () => {
     setShowAnswers(true)
 
+    // Berechne Punkte für alle Spieler die richtig geantwortet haben
+    const currentQuestion = quiz.questions[currentQuestionIndex]
+    const updatedPlayers = players.map(player => {
+      if (player.hasAnswered && player.correct) {
+        const pointsEarned = currentQuestion.points || 100
+        return {
+          ...player,
+          score: (player.score || 0) + pointsEarned
+        }
+      }
+      return player
+    })
+    setPlayers(updatedPlayers)
+
     // Prüfe ob alle Spieler falsch geantwortet haben
     const allWrong = players.length > 0 && players.every(p => p.hasAnswered && !p.correct)
 
