@@ -500,6 +500,28 @@ function QuizHost() {
 
   return (
     <div className="quiz-host">
+      {/* Room Code - Bottom Left */}
+      <div style={{
+        position: 'fixed',
+        bottom: '20px',
+        left: '20px',
+        padding: '12px 20px',
+        background: 'rgba(0, 0, 0, 0.7)',
+        backdropFilter: 'blur(10px)',
+        color: 'white',
+        borderRadius: '12px',
+        fontSize: '16px',
+        fontWeight: '600',
+        zIndex: 1000,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px'
+      }}>
+        <span style={{ opacity: 0.8 }}>🔑</span>
+        <span>Raum: {joinCode}</span>
+      </div>
+
       {gameState === 'lobby' && (
         <div className="lobby">
           <div className="lobby-content">
@@ -898,10 +920,22 @@ function QuizHost() {
                       ) : (
                         <span style={{ color: '#94a3b8' }}>⏳ Wartet...</span>
                       )}
+                      <span style={{
+                        fontSize: '14px',
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontWeight: '600',
+                        marginLeft: '12px'
+                      }}>
+                        Punkte +/-
+                      </span>
                       <button
                         className="btn btn-sm btn-outline-light"
                         onClick={() => openPointsModal(player)}
-                        style={{ marginLeft: '8px' }}
+                        style={{
+                          marginLeft: '8px',
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          borderColor: 'rgba(255, 255, 255, 0.3)'
+                        }}
                       >
                         <Plus size={16} />
                       </button>

@@ -50,16 +50,20 @@ function Home() {
           return
         }
 
-        const currentCount = quizzes.length
-
         // Import quizzes using storage utility
-        await importQuizzes(importedQuizzes)
+        const result = await importQuizzes(importedQuizzes)
 
-        if (currentCount > 0) {
-          alert(`✅ Erfolgreich geladen!\n\n${currentCount} alte Quiz(ze) wurden ersetzt durch ${importedQuizzes.length} Quiz(ze) aus der Datei.`)
-        } else {
-          alert(`✅ ${importedQuizzes.length} Quiz(ze) erfolgreich geladen!`)
+        // Show detailed result message
+        let message = '✅ Import erfolgreich!\n\n'
+        if (result.added > 0) {
+          message += `📥 ${result.added} neue Quiz(ze) hinzugefügt\n`
         }
+        if (result.updated > 0) {
+          message += `🔄 ${result.updated} Quiz(ze) aktualisiert\n`
+        }
+        message += `\n💾 Gesamt: ${(await getQuizzes()).length} Quiz(ze) gespeichert`
+
+        alert(message)
 
         // Reload quizzes
         await loadQuizzes()

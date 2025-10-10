@@ -148,23 +148,57 @@ export const getQuizById = async (quizId) => {
   }
 }
 
-// Import quizzes (replace all)
+// Import quizzes (merge with existing, don't overwrite)
 export const importQuizzes = async (quizzesToImport) => {
   if (isElectron()) {
     try {
-      // Delete all existing quizzes
-      await deleteAllQuizzes()
+      // Get existing quizzes
+      const existing = await getQuizzes()
+      const existingIds = new Set(existing.map(q => q.id))
 
-      // Import new quizzes
-      await Promise.all(quizzesToImport.map(quiz => saveQuiz(quiz)))
-      return { success: true, count: quizzesToImport.length }
+      let updated = 0
+      let added = 0
+
+      // Import new quizzes or update existing ones
+      for (const quiz of quizzesToImport) {
+        if (existingIds.has(quiz.id)) {
+          // Update existing quiz
+          await updateQuiz(quiz.id, quiz)
+          updated++
+        } else {
+          // Add new quiz
+          await saveQuiz(quiz)
+          added++
+        }
+      }
+
+      return { success: true, added, updated, total: quizzesToImport.length }
     } catch (error) {
       console.error('Error importing quizzes:', error)
       throw error
     }
   } else {
     // Browser: use LocalStorage
-    localStorage.setItem('quizzes', JSON.stringify(quizzesToImport))
-    return { success: true, count: quizzesToImport.length }
+    const existing = JSON.parse(localStorage.getItem('quizzes') || '[]')
+    const existingMap = new Map(existing.map(q => [q.id, q]))
+
+    let updated = 0
+    let added = 0
+
+    // Merge imported quizzes with existing
+    for (const quiz of quizzesToImport) {
+      if (existingMap.has(quiz.id)) {
+        // Update existing quiz
+        existingMap.set(quiz.id, quiz)
+        updated++
+      } else {
+        // Add new quiz
+        existingMap.set(quiz.id, quiz)
+        added++
+      }
+    }
+
+    localStorage.setItem('quizzes', JSON.stringify(Array.from(existingMap.values())))
+    return { success: true, added, updated, total: quizzesToImport.length }
   }
 }
