@@ -35,6 +35,7 @@ function QuizHost() {
   const [showLeaderboardModal, setShowLeaderboardModal] = useState(false)
   const [playersWhoGotPoints, setPlayersWhoGotPoints] = useState([]) // Track who got points
   const [showUnlockWarning, setShowUnlockWarning] = useState(false) // Warning modal
+  const [qrZoomed, setQrZoomed] = useState(false) // QR Code zoom state
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -159,6 +160,40 @@ function QuizHost() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const simulateDemoAnswers = (question) => {
+    // Demo-Spieler antworten nach 1-5 Sekunden zufällig
+    const demoPlayers = players.filter(p => p.isDemo)
+
+    demoPlayers.forEach((player, index) => {
+      setTimeout(() => {
+        if (question.type === 'multiple') {
+          // Zufällige Antwort wählen (70% richtig, 30% falsch)
+          const isCorrect = Math.random() < 0.7
+          let answerIndex
+
+          if (isCorrect) {
+            // Wähle eine richtige Antwort
+            const correctAnswers = question.correctAnswers || [question.correctAnswer]
+            answerIndex = correctAnswers[Math.floor(Math.random() * correctAnswers.length)]
+          } else {
+            // Wähle eine falsche Antwort
+            const wrongAnswers = question.answers.map((_, i) => i).filter(i =>
+              !(question.correctAnswers || [question.correctAnswer]).includes(i)
+            )
+            answerIndex = wrongAnswers[Math.floor(Math.random() * wrongAnswers.length)]
+          }
+
+          // Simuliere Antwort
+          setPlayers(prev => prev.map(p =>
+            p.id === player.id
+              ? { ...p, hasAnswered: true, selectedAnswer: answerIndex, correct: isCorrect }
+              : p
+          ))
+        }
+      }, (index + 1) * 1000 + Math.random() * 4000) // 1-5 Sekunden verzögert
+    })
+  }
+
   const startGame = () => {
     try {
       console.log('startGame called', { quiz, players: players.length, currentQuestionIndex, isTestMode })
@@ -196,6 +231,11 @@ function QuizHost() {
       // Emit game start to all players
       socket.emit('start-game', { roomCode: joinCode })
       console.log('Game started successfully')
+
+      // Simuliere Demo-Spieler Antworten
+      if (isTestMode) {
+        simulateDemoAnswers(question)
+      }
     } catch (error) {
       console.error('❌ ERROR in startGame:', error)
       alert('Fehler beim Starten: ' + error.message)
@@ -227,6 +267,11 @@ function QuizHost() {
 
       // Emit next question
       socket.emit('next-question', { roomCode: joinCode })
+
+      // Simuliere Demo-Spieler Antworten
+      if (isTestMode) {
+        simulateDemoAnswers(question)
+      }
     } else {
       setGameState('final')
       // Konfetti starten
@@ -443,18 +488,28 @@ function QuizHost() {
                 <button
                   className="btn btn-warning"
                   onClick={() => {
-                    const testPlayer = {
-                      id: 'test-' + Date.now(),
-                      name: `Test User ${players.length + 1}`,
-                      avatar: ['🤖', '👤', '🎯', '⭐', '🎮'][players.length % 5],
-                      score: 0,
-                      ready: false
+                    const demoNames = ['Max', 'Anna', 'Leon', 'Sophie', 'Lukas', 'Emma', 'Felix', 'Mia', 'Paul', 'Laura']
+                    const demoAvatars = ['🤖', '👤', '🎯', '⭐', '🎮', '👨', '👩', '🧑', '👧', '👦']
+                    const newPlayers = []
+
+                    for (let i = 0; i < 10; i++) {
+                      if (players.length + i < 10) {
+                        newPlayers.push({
+                          id: 'demo-' + Date.now() + '-' + i,
+                          name: demoNames[i],
+                          avatar: demoAvatars[i],
+                          score: 0,
+                          ready: false,
+                          isDemo: true
+                        })
+                      }
                     }
-                    setPlayers([...players, testPlayer])
+
+                    setPlayers([...players, ...newPlayers])
                   }}
                 >
                   <Plus size={20} />
-                  Test User
+                  10 Demo-Spieler
                 </button>
               )}
               <button
@@ -504,50 +559,92 @@ function QuizHost() {
                     background: 'white',
                     borderRadius: '12px',
                     position: 'relative',
-                    resize: 'both',
-                    overflow: 'auto',
-                    minWidth: '150px',
-                    minHeight: '150px',
-                    maxWidth: '500px',
-                    maxHeight: '500px',
                     border: '3px solid #e2e8f0',
-                    cursor: 'nwse-resize'
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s'
                   }}
-                  onMouseDown={(e) => {
-                    setIsResizing(true)
-                    const startSize = qrSize
-                    const startX = e.clientX
-                    const startY = e.clientY
-
-                    const handleMouseMove = (e) => {
-                      const deltaX = e.clientX - startX
-                      const deltaY = e.clientY - startY
-                      const delta = Math.max(deltaX, deltaY)
-                      const newSize = Math.min(Math.max(startSize + delta, 100), 400)
-                      setQrSize(newSize)
-                    }
-
-                    const handleMouseUp = () => {
-                      setIsResizing(false)
-                      document.removeEventListener('mousemove', handleMouseMove)
-                      document.removeEventListener('mouseup', handleMouseUp)
-                    }
-
-                    document.addEventListener('mousemove', handleMouseMove)
-                    document.addEventListener('mouseup', handleMouseUp)
-                  }}
+                  onClick={() => setQrZoomed(!qrZoomed)}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
                   <QRCodeSVG
                     value={joinUrl}
-                    size={qrSize}
+                    size={200}
                     level="H"
                     includeMargin={false}
                   />
                 </div>
                 <p style={{ marginTop: '12px', fontSize: '14px', color: '#64748b' }}>
-                  💡 Ziehe an der Ecke um den QR-Code zu vergrößern
+                  💡 Klicke auf den QR-Code um ihn zu vergrößern
                 </p>
               </div>
+
+              {/* QR Code Zoom Modal */}
+              {qrZoomed && (
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0, 0, 0, 0.9)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 10000,
+                    animation: 'fadeIn 0.2s'
+                  }}
+                  onClick={() => setQrZoomed(false)}
+                >
+                  <button
+                    style={{
+                      position: 'absolute',
+                      top: '20px',
+                      right: '20px',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '50px',
+                      height: '50px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      backdropFilter: 'blur(10px)',
+                      transition: 'background 0.2s'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setQrZoomed(false)
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.3)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
+                  >
+                    <X size={30} color="white" />
+                  </button>
+                  <div
+                    style={{
+                      padding: '40px',
+                      background: 'white',
+                      borderRadius: '20px',
+                      boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                      animation: 'slideUp 0.3s'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <QRCodeSVG
+                      value={joinUrl}
+                      size={500}
+                      level="H"
+                      includeMargin={false}
+                    />
+                    <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                      {joinCode}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="players-waiting card animate-fadeIn">

@@ -891,19 +891,29 @@ function CreateQuiz() {
               )}
 
               <div className="question-settings">
-                <label>
-                  <h4>Zeit-Modus ⏱️</h4>
-                  <select
-                    value={currentQuestion.timeMode || 'fixed'}
-                    onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeMode: e.target.value })}
-                  >
-                    <option value="fixed">⏱️ Feste Zeit</option>
-                    <option value="waitAll">👥 Bis alle geantwortet haben</option>
-                    <option value="unlimited">∞ Unbegrenzt (Moderator entscheidet)</option>
-                  </select>
-                </label>
+                {currentQuestion.type !== 'buzzer' ? (
+                  <>
+                    <label>
+                      <h4>Zeit-Modus ⏱️</h4>
+                      <select
+                        value={currentQuestion.timeMode || 'fixed'}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, timeMode: e.target.value })}
+                      >
+                        <option value="fixed">⏱️ Feste Zeit</option>
+                        <option value="waitAll">👥 Bis alle geantwortet haben</option>
+                        <option value="unlimited">∞ Unbegrenzt (Moderator entscheidet)</option>
+                      </select>
+                    </label>
+                  </>
+                ) : (
+                  <div style={{ padding: '12px', background: 'rgba(251, 191, 36, 0.1)', borderRadius: '8px', border: '1px solid rgba(251, 191, 36, 0.3)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '14px', color: '#92400e', fontWeight: '600', margin: 0 }}>
+                      ⏱️ Buzzer-Fragen haben immer unbegrenzten Zeitmodus
+                    </p>
+                  </div>
+                )}
 
-                {currentQuestion.timeMode === 'fixed' && (
+                {currentQuestion.type !== 'buzzer' && currentQuestion.timeMode === 'fixed' && (
                   <label>
                     <h4>Zeit (Sekunden)</h4>
                     <input
@@ -916,7 +926,7 @@ function CreateQuiz() {
                   </label>
                 )}
 
-                {currentQuestion.timeMode === 'waitAll' && (
+                {currentQuestion.type !== 'buzzer' && currentQuestion.timeMode === 'waitAll' && (
                   <label>
                     <h4>Max. Timeout (Sekunden)</h4>
                     <input

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
 import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
-import ImageReveal from '../components/ImageReveal'
 import socket from '../socket'
 import './PlayQuiz.css'
 
@@ -451,17 +450,7 @@ function PlayQuiz() {
           <div className="question-card card animate-fadeIn">
             <h2 className="question-text-player">{currentQuestion.question}</h2>
 
-            {currentQuestion.image && (
-              <div style={{ textAlign: 'center', margin: '20px 0' }}>
-                <ImageReveal
-                  src={currentQuestion.image}
-                  alt="Question"
-                  animation={currentQuestion.imageRevealAnimation || 'none'}
-                  duration={currentQuestion.imageRevealDuration || 5}
-                  style={{ margin: '20px 0' }}
-                />
-              </div>
-            )}
+            {/* Bilder werden nur beim Host angezeigt, nicht bei Spielern */}
 
             {currentQuestion.type === 'multiple' && (
               <div className="answers-list">
