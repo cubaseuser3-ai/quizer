@@ -311,6 +311,9 @@ function QuizHost() {
       // Wenn alle falsch: Kurz warten und automatisch weiter
       setTimeout(() => {
         if (quiz.showLeaderboardAfterQuestion) {
+          // Save current rankings before showing results
+          const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
+          setPreviousRankings(currentRankings)
           setGameState('results')
           socket.emit('show-results', { roomCode: joinCode })
         } else {
@@ -321,6 +324,9 @@ function QuizHost() {
       // Normal: Wenn Quiz die Option hat, automatisch Rangliste anzeigen
       if (quiz.showLeaderboardAfterQuestion) {
         setTimeout(() => {
+          // Save current rankings before showing results
+          const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
+          setPreviousRankings(currentRankings)
           setGameState('results')
           socket.emit('show-results', { roomCode: joinCode })
         }, 2000)
@@ -949,17 +955,60 @@ function QuizHost() {
         <div className="results-screen">
           <div className="results-content">
             <h2 className="animate-fadeIn">Zwischenstand</h2>
-            <div className="leaderboard card animate-fadeIn">
-              {sortedPlayers.map((player, index) => (
-                <div key={player.id} className="leaderboard-item" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <div className="rank">#{index + 1}</div>
-                  <div className="player-info">
-                    <span className="player-avatar">{player.avatar}</span>
-                    <span className="player-name">{player.name}</span>
+            <div className="leaderboard card animate-fadeIn" style={{ position: 'relative' }}>
+              {sortedPlayers.map((player, index) => {
+                // Find previous rank to determine if position changed
+                const previousRank = previousRankings.findIndex(p => p.id === player.id)
+                let glowColor = ''
+
+                if (previousRank !== -1 && previousRank !== index) {
+                  if (previousRank > index) {
+                    glowColor = '#10b981' // Green glow for moving up
+                  } else {
+                    glowColor = '#ef4444' // Red glow for moving down
+                  }
+                }
+
+                // Calculate position for smooth slide
+                const itemHeight = 80 // Height of each leaderboard item + gap
+                const topPosition = index * itemHeight
+
+                return (
+                  <div
+                    key={player.id}
+                    className="leaderboard-item-sliding"
+                    style={{
+                      position: 'absolute',
+                      top: `${topPosition}px`,
+                      left: 0,
+                      right: 0,
+                      transition: 'top 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease',
+                      boxShadow: glowColor ? `0 0 20px ${glowColor}, 0 0 40px ${glowColor}40` : 'none',
+                    }}
+                  >
+                    <div className="rank">
+                      #{index + 1}
+                      {previousRank !== -1 && previousRank !== index && (
+                        <span style={{
+                          marginLeft: '8px',
+                          fontSize: '16px',
+                          color: previousRank > index ? '#10b981' : '#ef4444',
+                          animation: 'rank-indicator-pulse 0.8s ease-out'
+                        }}>
+                          {previousRank > index ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="player-info">
+                      <span className="player-avatar">{player.avatar}</span>
+                      <span className="player-name">{player.name}</span>
+                    </div>
+                    <div className="player-score">{player.score}</div>
                   </div>
-                  <div className="player-score">{player.score}</div>
-                </div>
-              ))}
+                )
+              })}
+              {/* Spacer to maintain height */}
+              <div style={{ height: `${sortedPlayers.length * 80}px` }}></div>
             </div>
             <button className="btn btn-primary btn-lg" onClick={nextQuestion}>
               {currentQuestionIndex < quiz.questions.length - 1 ? 'Weiter' : 'Endergebnis'}
@@ -970,30 +1019,70 @@ function QuizHost() {
 
       {gameState === 'final' && (
         <div className="final-screen">
-          {/* Controls rechts oben */}
-          <div className="final-controls">
-            <button className="btn btn-warning" onClick={handleRestartQuiz}>
-              <RotateCcw size={20} />
+          {/* Controls rechts oben - kleiner und ganz rechts */}
+          <div className="final-controls" style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '8px' }}>
+            <button className="btn btn-warning btn-sm" onClick={handleRestartQuiz} style={{ padding: '8px 12px', fontSize: '14px' }}>
+              <RotateCcw size={16} />
               Neustart
             </button>
-            <button className="btn btn-danger" onClick={handleEndQuiz}>
-              <X size={20} />
+            <button className="btn btn-danger btn-sm" onClick={handleEndQuiz} style={{ padding: '8px 12px', fontSize: '14px' }}>
+              <X size={16} />
               Beenden
             </button>
           </div>
 
           <div className="final-content">
-            <div className="trophy-icon animate-bounce">
-              <Trophy size={80} />
+            {/* Fireworks Animation */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: 'none',
+              overflow: 'hidden',
+              zIndex: 1
+            }}>
+              {[...Array(20)].map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    position: 'absolute',
+                    width: '4px',
+                    height: '4px',
+                    background: ['#fbbf24', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'][i % 5],
+                    borderRadius: '50%',
+                    top: `${Math.random() * 100}%`,
+                    left: `${Math.random() * 100}%`,
+                    animation: `firework ${1 + Math.random() * 2}s ease-out ${Math.random() * 2}s infinite`,
+                    opacity: 0
+                  }}
+                />
+              ))}
             </div>
-            <h1 className="animate-fadeIn">Quiz Beendet!</h1>
+
+            <div className="trophy-icon" style={{ animation: 'trophy-bounce 2s ease-in-out infinite', position: 'relative', zIndex: 2 }}>
+              <Trophy size={100} style={{ filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.5))' }} />
+            </div>
+            <h1 className="animate-fadeIn" style={{
+              fontSize: '48px',
+              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              animation: 'title-glow 2s ease-in-out infinite',
+              position: 'relative',
+              zIndex: 2
+            }}>
+              Quiz Beendet!
+            </h1>
 
             {/* Komplette Rangliste */}
-            <div className="final-leaderboard">
-              <h2 style={{ color: 'white', marginBottom: '24px', fontSize: '28px', fontWeight: '800' }}>
+            <div className="final-leaderboard" style={{ position: 'relative', zIndex: 2 }}>
+              <h2 style={{ color: 'white', marginBottom: '32px', fontSize: '32px', fontWeight: '800', textShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
                 🏆 Endergebnis
               </h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '700px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', maxWidth: '800px' }}>
                 {sortedPlayers.map((player, index) => (
                   <div
                     key={player.id}
@@ -1001,7 +1090,7 @@ function QuizHost() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: '20px',
-                      padding: '20px',
+                      padding: '24px',
                       background: index === 0
                         ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
                         : index === 1
@@ -1009,36 +1098,54 @@ function QuizHost() {
                         : index === 2
                         ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)'
                         : 'rgba(255, 255, 255, 0.95)',
-                      borderRadius: '16px',
-                      boxShadow: index < 3 ? '0 8px 24px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.15)',
+                      borderRadius: '20px',
+                      boxShadow: index < 3 ? '0 12px 32px rgba(0,0,0,0.4)' : '0 6px 16px rgba(0,0,0,0.2)',
                       color: index < 3 ? 'white' : '#1e293b',
-                      transform: index === 0 ? 'scale(1.05)' : 'scale(1)',
-                      border: index === 0 ? '3px solid rgba(255,255,255,0.5)' : 'none'
+                      transform: index === 0 ? 'scale(1.08)' : index === 1 ? 'scale(1.04)' : index === 2 ? 'scale(1.02)' : 'scale(1)',
+                      border: index === 0 ? '4px solid rgba(255,255,255,0.6)' : 'none',
+                      animation: `slide-up ${0.5 + index * 0.1}s ease-out`,
+                      position: 'relative',
+                      overflow: 'hidden'
                     }}
                   >
+                    {index === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%)',
+                        animation: 'shimmer 3s infinite'
+                      }} />
+                    )}
                     <div style={{
-                      fontSize: index < 3 ? '40px' : '32px',
+                      fontSize: index < 3 ? '48px' : '36px',
                       fontWeight: '900',
-                      minWidth: '60px',
-                      textAlign: 'center'
+                      minWidth: '70px',
+                      textAlign: 'center',
+                      animation: index < 3 ? `medal-spin ${2 + index}s ease-in-out infinite` : 'none'
                     }}>
                       {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
                     </div>
-                    <div style={{ fontSize: index < 3 ? '40px' : '32px' }}>{player.avatar}</div>
+                    <div style={{ fontSize: index < 3 ? '48px' : '36px' }}>{player.avatar}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        fontSize: index < 3 ? '24px' : '20px',
-                        fontWeight: '800'
+                        fontSize: index < 3 ? '28px' : '22px',
+                        fontWeight: '900',
+                        textShadow: index < 3 ? '0 2px 8px rgba(0,0,0,0.2)' : 'none'
                       }}>
                         {player.name}
                       </div>
                     </div>
                     <div style={{
-                      fontSize: index < 3 ? '32px' : '24px',
+                      fontSize: index < 3 ? '36px' : '28px',
                       fontWeight: '900',
-                      background: index < 3 ? 'rgba(255,255,255,0.3)' : 'rgba(99,102,241,0.1)',
-                      padding: '8px 20px',
-                      borderRadius: '12px'
+                      background: index < 3 ? 'rgba(255,255,255,0.4)' : 'rgba(99,102,241,0.15)',
+                      padding: '12px 28px',
+                      borderRadius: '16px',
+                      backdropFilter: 'blur(10px)',
+                      boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.1)'
                     }}>
                       {player.score}
                     </div>

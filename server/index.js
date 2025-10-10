@@ -93,8 +93,10 @@ io.on('connection', (socket) => {
     const existingPlayer = room.players.find(p => p.name === playerName)
 
     if (existingPlayer) {
-      // Player is reconnecting - update their socket ID
+      // Player is reconnecting - update their socket ID and clear disconnect flag
       existingPlayer.id = socket.id
+      existingPlayer.disconnected = false
+      delete existingPlayer.disconnectTime
       socket.join(roomCode)
 
       // Send current room state with their score and current question
@@ -447,21 +449,41 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id)
 
-    // Remove player from rooms
+    // Handle player disconnect with grace period for reconnection
     gameRooms.forEach((room, roomCode) => {
       const playerIndex = room.players.findIndex(p => p.id === socket.id)
 
       if (playerIndex !== -1) {
         const player = room.players[playerIndex]
-        room.players.splice(playerIndex, 1)
 
-        io.to(roomCode).emit('player-left', {
-          playerId: socket.id,
-          playerName: player.name,
-          players: room.players
-        })
+        // Mark player as disconnected instead of removing immediately
+        player.disconnected = true
+        player.disconnectTime = Date.now()
 
-        console.log(`Player ${player.name} left room ${roomCode}`)
+        console.log(`Player ${player.name} disconnected from room ${roomCode} - waiting for reconnection...`)
+
+        // Remove player after 60 seconds if they don't reconnect
+        setTimeout(() => {
+          const currentRoom = gameRooms.get(roomCode)
+          if (!currentRoom) return
+
+          const stillDisconnected = currentRoom.players.find(
+            p => p.name === player.name && p.disconnected && p.disconnectTime === player.disconnectTime
+          )
+
+          if (stillDisconnected) {
+            const idx = currentRoom.players.findIndex(p => p.name === player.name)
+            if (idx !== -1) {
+              currentRoom.players.splice(idx, 1)
+              io.to(roomCode).emit('player-left', {
+                playerId: socket.id,
+                playerName: player.name,
+                players: currentRoom.players
+              })
+              console.log(`Player ${player.name} removed from room ${roomCode} after timeout`)
+            }
+          }
+        }, 60000) // 60 seconds grace period
       }
 
       // If host disconnects, notify players and close room
