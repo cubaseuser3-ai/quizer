@@ -129,11 +129,11 @@ function CreateQuiz() {
     { id: 'multiple', name: 'Multiple Choice', icon: '☑️' },
     { id: 'buzzer', name: 'Buzzer Frage', icon: '🔔' },
     { id: 'truefalse', name: 'Wahr/Falsch', icon: '✓✗' },
-    { id: 'estimation', name: 'Schätzfrage', icon: '🎯' },
-    { id: 'fillblank', name: 'Lückentext', icon: '📝' },
-    { id: 'matching', name: 'Paare zuordnen', icon: '🔗' },
-    { id: 'open', name: 'Offene Frage', icon: '💭' },
-    { id: 'geo', name: 'Geografie', icon: '🌍' }
+    { id: 'estimation', name: 'Schätzfrage (Beta)', icon: '🎯' },
+    { id: 'fillblank', name: 'Lückentext (Beta)', icon: '📝' },
+    { id: 'matching', name: 'Paare zuordnen (Beta)', icon: '🔗' },
+    { id: 'open', name: 'Offene Frage (Beta)', icon: '💭' },
+    { id: 'geo', name: 'Geografie (Beta)', icon: '🌍' }
   ]
 
   const [currentQuestion, setCurrentQuestion] = useState({
@@ -149,7 +149,17 @@ function CreateQuiz() {
     maxTimeout: 60, // Nur für 'waitAll'
     image: '', // Für Bild-Upload
     imageRevealAnimation: 'none', // Animation type: 'none', 'blur', 'pixelate', 'zoom', 'fade'
-    imageRevealDuration: 5 // Duration in seconds
+    imageRevealDuration: 5, // Duration in seconds
+    // Schätzfrage
+    correctEstimation: 0,
+    estimationTolerance: 10, // +/- Toleranz in Prozent
+    // Lückentext
+    textWithBlanks: '',
+    blanks: [], // Array von richtigen Antworten für Lücken
+    // Paare zuordnen
+    pairs: [{ left: '', right: '' }],
+    // Offene Frage
+    sampleAnswer: '' // Beispiel-Antwort für Moderator
   })
 
   const addQuestion = () => {
@@ -887,6 +897,201 @@ function CreateQuiz() {
                       <span>✗ Falsch</span>
                     </label>
                   </div>
+                </div>
+              )}
+
+              {/* Schätzfrage */}
+              {currentQuestion.type === 'estimation' && (
+                <div className="answers-section">
+                  <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
+                      🧪 <strong>Beta-Feature:</strong> Spieler geben eine Zahl ein. Je näher, desto mehr Punkte!
+                    </p>
+                  </div>
+                  <label>
+                    <h4>Richtige Antwort (Zahl)</h4>
+                    <input
+                      type="number"
+                      value={currentQuestion.correctEstimation || 0}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, correctEstimation: parseFloat(e.target.value) })}
+                      placeholder="z.B. 1000"
+                    />
+                  </label>
+                  <label>
+                    <h4>Toleranz (%)</h4>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={currentQuestion.estimationTolerance || 10}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, estimationTolerance: parseInt(e.target.value) })}
+                    />
+                    <small style={{ color: '#64748b', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      Antworten innerhalb ±{currentQuestion.estimationTolerance || 10}% gelten als korrekt
+                    </small>
+                  </label>
+                </div>
+              )}
+
+              {/* Lückentext */}
+              {currentQuestion.type === 'fillblank' && (
+                <div className="answers-section">
+                  <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
+                      🧪 <strong>Beta-Feature:</strong> Verwende [___] für Lücken im Text
+                    </p>
+                  </div>
+                  <label>
+                    <h4>Text mit Lücken</h4>
+                    <textarea
+                      rows="4"
+                      value={currentQuestion.textWithBlanks || ''}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, textWithBlanks: e.target.value })}
+                      placeholder="z.B. Die Hauptstadt von Deutschland ist [___] und liegt an der [___]."
+                    />
+                    <small style={{ color: '#64748b', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      Anzahl Lücken: {(currentQuestion.textWithBlanks || '').match(/\[___\]/g)?.length || 0}
+                    </small>
+                  </label>
+                  <label>
+                    <h4>Richtige Antworten (Komma-getrennt)</h4>
+                    <input
+                      type="text"
+                      value={(currentQuestion.blanks || []).join(', ')}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, blanks: e.target.value.split(',').map(s => s.trim()) })}
+                      placeholder="z.B. Berlin, Spree"
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Paare zuordnen */}
+              {currentQuestion.type === 'matching' && (
+                <div className="answers-section">
+                  <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
+                      🧪 <strong>Beta-Feature:</strong> Spieler ordnen Begriffe einander zu
+                    </p>
+                  </div>
+                  <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4>Paare</h4>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-primary"
+                      onClick={() => setCurrentQuestion({ ...currentQuestion, pairs: [...(currentQuestion.pairs || []), { left: '', right: '' }] })}
+                      style={{ padding: '6px 12px', fontSize: '14px' }}
+                    >
+                      <Plus size={16} /> Paar hinzufügen
+                    </button>
+                  </div>
+                  {(currentQuestion.pairs || []).map((pair, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Links"
+                        value={pair.left}
+                        onChange={(e) => {
+                          const newPairs = [...(currentQuestion.pairs || [])]
+                          newPairs[index].left = e.target.value
+                          setCurrentQuestion({ ...currentQuestion, pairs: newPairs })
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <span style={{ fontSize: '20px' }}>↔️</span>
+                      <input
+                        type="text"
+                        placeholder="Rechts"
+                        value={pair.right}
+                        onChange={(e) => {
+                          const newPairs = [...(currentQuestion.pairs || [])]
+                          newPairs[index].right = e.target.value
+                          setCurrentQuestion({ ...currentQuestion, pairs: newPairs })
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      {(currentQuestion.pairs || []).length > 1 && (
+                        <button
+                          type="button"
+                          className="btn-icon"
+                          onClick={() => {
+                            const newPairs = (currentQuestion.pairs || []).filter((_, i) => i !== index)
+                            setCurrentQuestion({ ...currentQuestion, pairs: newPairs })
+                          }}
+                          style={{ padding: '8px', color: 'var(--danger)' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Offene Frage */}
+              {currentQuestion.type === 'open' && (
+                <div className="answers-section">
+                  <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
+                      🧪 <strong>Beta-Feature:</strong> Spieler schreiben freien Text. Moderator bewertet manuell.
+                    </p>
+                  </div>
+                  <label>
+                    <h4>Beispiel-Antwort (für Moderator)</h4>
+                    <textarea
+                      rows="3"
+                      value={currentQuestion.sampleAnswer || ''}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, sampleAnswer: e.target.value })}
+                      placeholder="z.B. Eine gute Antwort sollte ... enthalten"
+                    />
+                    <small style={{ color: '#64748b', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      Dies wird dem Moderator als Referenz angezeigt
+                    </small>
+                  </label>
+                </div>
+              )}
+
+              {/* Geografie */}
+              {currentQuestion.type === 'geo' && (
+                <div className="answers-section">
+                  <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '16px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', margin: 0 }}>
+                      🧪 <strong>Beta-Feature:</strong> Spieler klicken auf eine Weltkarte
+                    </p>
+                  </div>
+                  <label>
+                    <h4>Ziel-Koordinaten</h4>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="number"
+                        step="0.0001"
+                        value={currentQuestion.targetLat || 0}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, targetLat: parseFloat(e.target.value) })}
+                        placeholder="Latitude (z.B. 52.52)"
+                        style={{ flex: 1 }}
+                      />
+                      <input
+                        type="number"
+                        step="0.0001"
+                        value={currentQuestion.targetLng || 0}
+                        onChange={(e) => setCurrentQuestion({ ...currentQuestion, targetLng: parseFloat(e.target.value) })}
+                        placeholder="Longitude (z.B. 13.405)"
+                        style={{ flex: 1 }}
+                      />
+                    </div>
+                    <small style={{ color: '#64748b', fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                      Koordinaten können auf google.com/maps gefunden werden
+                    </small>
+                  </label>
+                  <label>
+                    <h4>Toleranz (km)</h4>
+                    <input
+                      type="number"
+                      min="1"
+                      value={currentQuestion.geoTolerance || 100}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, geoTolerance: parseInt(e.target.value) })}
+                      placeholder="z.B. 100"
+                    />
+                  </label>
                 </div>
               )}
 
