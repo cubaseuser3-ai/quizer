@@ -249,7 +249,11 @@ function PlayQuiz() {
 
       let userMessage = ''
       if (errorMsg.includes('Room not found')) {
-        userMessage = 'Quiz-Raum wurde nicht gefunden. Möglicherweise wurde das Quiz noch nicht gestartet oder das Backend wurde neu gestartet.'
+        userMessage = '❌ Quiz-Raum nicht gefunden!\n\n' +
+                     '✅ Mögliche Lösungen:\n' +
+                     '• Der Host muss das Quiz erst STARTEN (nicht nur speichern)\n' +
+                     '• Prüfe ob der Code richtig ist\n' +
+                     '• Das Backend wurde möglicherweise neu gestartet'
       } else {
         userMessage = errorMsg
       }

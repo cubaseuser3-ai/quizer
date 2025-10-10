@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink, Plus, Minus, Unlock } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import ZoomControls from '../components/ZoomControls'
@@ -12,6 +12,8 @@ import './QuizHost.css'
 function QuizHost() {
   const { quizId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isTestMode = searchParams.get('test') === 'true'
   const [quiz, setQuiz] = useState(null)
   const [gameState, setGameState] = useState('lobby') // lobby, question, results, final
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -159,9 +161,9 @@ function QuizHost() {
 
   const startGame = () => {
     try {
-      console.log('startGame called', { quiz, players: players.length, currentQuestionIndex })
+      console.log('startGame called', { quiz, players: players.length, currentQuestionIndex, isTestMode })
 
-      if (players.length === 0) {
+      if (players.length === 0 && !isTestMode) {
         alert('Warte auf Spieler!')
         return
       }
@@ -437,10 +439,28 @@ function QuizHost() {
         <div className="lobby">
           <div className="lobby-content">
             <div style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', gap: '10px' }}>
+              {isTestMode && (
+                <button
+                  className="btn btn-warning"
+                  onClick={() => {
+                    const testPlayer = {
+                      id: 'test-' + Date.now(),
+                      name: `Test User ${players.length + 1}`,
+                      avatar: ['🤖', '👤', '🎯', '⭐', '🎮'][players.length % 5],
+                      score: 0,
+                      ready: false
+                    }
+                    setPlayers([...players, testPlayer])
+                  }}
+                >
+                  <Plus size={20} />
+                  Test User
+                </button>
+              )}
               <button
                 className="btn btn-primary btn-lg animate-pulse"
                 onClick={startGame}
-                disabled={players.length === 0}
+                disabled={players.length === 0 && !isTestMode}
               >
                 <Play size={24} />
                 Spiel starten
@@ -535,6 +555,11 @@ function QuizHost() {
                 <h3>
                   <Users size={24} />
                   Wartende Spieler ({players.length})
+                  {isTestMode && (
+                    <span style={{ marginLeft: '12px', fontSize: '14px', background: '#fbbf24', color: '#1e293b', padding: '4px 12px', borderRadius: '12px', fontWeight: '700' }}>
+                      🧪 TEST-MODUS
+                    </span>
+                  )}
                 </h3>
               </div>
               <div className="players-grid">
@@ -546,8 +571,19 @@ function QuizHost() {
                 ))}
                 {players.length === 0 && (
                   <div className="empty-players">
-                    <p>Warte auf Spieler...</p>
-                    <div className="pulse-dot"></div>
+                    {isTestMode ? (
+                      <>
+                        <p>🧪 Test-Modus aktiv</p>
+                        <p style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
+                          Du kannst das Quiz ohne Spieler testen
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>Warte auf Spieler...</p>
+                        <div className="pulse-dot"></div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

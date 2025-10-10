@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload, Image as ImageIcon, Copy } from 'lucide-react'
+import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload, Image as ImageIcon, Copy, Eye } from 'lucide-react'
 import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import ImageReveal from '../components/ImageReveal'
 import './CreateQuiz.css'
 import { getQuizzes, getQuizById, saveQuiz, importQuizzes } from '../utils/quizStorage'
 
@@ -22,6 +23,8 @@ function CreateQuiz() {
   const [editingQuestion, setEditingQuestion] = useState(null)
   const [quizzes, setQuizzes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showAnimationPreview, setShowAnimationPreview] = useState(false)
+  const [previewKey, setPreviewKey] = useState(0)
 
   // Load quizzes on mount
   useEffect(() => {
@@ -218,15 +221,17 @@ function CreateQuiz() {
 
   const editQuestion = (index) => {
     const question = questions[index]
-    // Stelle sicher, dass answers existiert (für UI-Kompatibilität)
-    const questionWithAnswers = {
+    // Stelle sicher, dass alle Felder existieren (für UI-Kompatibilität)
+    const questionWithDefaults = {
       ...question,
       answers: question.answers || ['', ''],
       correctAnswer: question.correctAnswer ?? 0,
       correctAnswers: question.correctAnswers || [0],
-      allowMultipleCorrect: question.allowMultipleCorrect || false
+      allowMultipleCorrect: question.allowMultipleCorrect || false,
+      imageRevealAnimation: question.imageRevealAnimation || 'none',
+      imageRevealDuration: question.imageRevealDuration || 5
     }
-    setCurrentQuestion(questionWithAnswers)
+    setCurrentQuestion(questionWithDefaults)
     setEditingQuestion(index)
     setShowQuestionModal(true)
   }
@@ -386,6 +391,14 @@ function CreateQuiz() {
     }
   }
 
+  const handleTestQuiz = async () => {
+    const quiz = await saveQuizData()
+    if (quiz) {
+      alert('📝 Test-Modus: Quiz wird gestartet!\n\nDu kannst das Quiz jetzt ohne Spieler testen.')
+      navigate(`/host/${quiz.id}?test=true`)
+    }
+  }
+
   return (
     <div className="create-quiz">
       <div className="create-header">
@@ -413,6 +426,10 @@ function CreateQuiz() {
               <button className="btn btn-outline" onClick={handleSave} disabled={questions.length === 0}>
                 <Save size={20} />
                 Speichern
+              </button>
+              <button className="btn btn-warning" onClick={handleTestQuiz} disabled={questions.length === 0} title="Quiz im Test-Modus starten (ohne Spieler)">
+                <Play size={20} />
+                Test
               </button>
               <button className="btn btn-success" onClick={handleSaveAndStart} disabled={questions.length === 0}>
                 <Save size={20} />
@@ -747,6 +764,20 @@ function CreateQuiz() {
                         <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px', lineHeight: '1.5' }}>
                           💡 Das Bild wird während dieser Zeit langsam aufgedeckt
                         </p>
+
+                        {/* Preview Button */}
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          onClick={() => {
+                            setPreviewKey(prev => prev + 1)
+                            setShowAnimationPreview(true)
+                          }}
+                          style={{ marginTop: '12px', width: '100%' }}
+                        >
+                          <Eye size={16} />
+                          Vorschau abspielen
+                        </button>
                       </div>
                     )}
                   </div>
@@ -922,6 +953,54 @@ function CreateQuiz() {
               <button className="btn btn-primary" onClick={saveQuestion}>
                 <Save size={20} />
                 Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Animation Preview Modal */}
+      {showAnimationPreview && currentQuestion.image && (
+        <div className="points-modal-overlay" onClick={() => setShowAnimationPreview(false)}>
+          <div className="points-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+            <div className="modal-header">
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
+                <Eye size={28} />
+                Animation Vorschau
+              </h2>
+              <button className="btn-icon" onClick={() => setShowAnimationPreview(false)}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '24px', background: '#1e293b' }}>
+              <ImageReveal
+                key={previewKey}
+                src={currentQuestion.image}
+                alt="Animation Preview"
+                animation={currentQuestion.imageRevealAnimation || 'none'}
+                duration={currentQuestion.imageRevealDuration || 5}
+                style={{ margin: '0 auto' }}
+              />
+              <div style={{ textAlign: 'center', marginTop: '16px', color: 'white' }}>
+                <p style={{ fontSize: '14px', opacity: 0.8 }}>
+                  Animation: <strong>{currentQuestion.imageRevealAnimation}</strong> •
+                  Dauer: <strong>{currentQuestion.imageRevealDuration}s</strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button
+                className="btn btn-outline"
+                onClick={() => {
+                  setPreviewKey(prev => prev + 1)
+                }}
+              >
+                🔄 Nochmal abspielen
+              </button>
+              <button className="btn btn-primary" onClick={() => setShowAnimationPreview(false)}>
+                Schließen
               </button>
             </div>
           </div>

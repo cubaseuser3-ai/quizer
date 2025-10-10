@@ -5,12 +5,14 @@ import PlayQuiz from './pages/PlayQuiz'
 import JoinQuiz from './pages/JoinQuiz'
 import QuizHost from './pages/QuizHost'
 import ServerStatus from './components/ServerStatus'
+import VersionDisplay from './components/VersionDisplay'
 import './App.css'
 
 function App() {
   return (
     <Router basename="/Quiz">
       <ServerStatus />
+      <VersionDisplay />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create" element={<CreateQuiz />} />
