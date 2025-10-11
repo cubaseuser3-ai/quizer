@@ -1174,8 +1174,10 @@
   background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
   margin-bottom: 12px;
-  will-change: top, box-shadow;
+  will-change: top, box-shadow, transform;
   z-index: 1;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 .leaderboard-item-sliding .rank {
@@ -1225,5 +1227,43 @@
   100% {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Enhanced slide animation with bounce */
+@keyframes enhanced-slide {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    transform: translateY(-5px) scale(1.01);
+  }
+  40% {
+    transform: translateY(5px) scale(0.99);
+  }
+  60% {
+    transform: translateY(-3px) scale(1.005);
+  }
+  80% {
+    transform: translateY(2px) scale(0.995);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Pulse animation for score changes */
+@keyframes score-pulse {
+  0% {
+    transform: scale(1);
+    color: var(--primary);
+  }
+  50% {
+    transform: scale(1.2);
+    color: #3b82f6;
+  }
+  100% {
+    transform: scale(1);
+    color: var(--primary);
   }
 }

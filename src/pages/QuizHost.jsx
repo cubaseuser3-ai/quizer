@@ -36,6 +36,7 @@ function QuizHost() {
   const [playersWhoGotPoints, setPlayersWhoGotPoints] = useState([]) // Track who got points
   const [showUnlockWarning, setShowUnlockWarning] = useState(false) // Warning modal
   const [qrZoomed, setQrZoomed] = useState(false) // QR Code zoom state
+  const [animatingPlayers, setAnimatingPlayers] = useState([]) // Players with animation highlight
 
   const joinCode = quizId.slice(-6).toUpperCase()
   const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
@@ -375,6 +376,16 @@ function QuizHost() {
     }
 
     console.log('Adjusting points:', points, 'for player:', selectedPlayer.name)
+
+    // Save previous rankings before updating
+    const sortedBefore = [...players].sort((a, b) => b.score - a.score)
+    setPreviousRankings(sortedBefore)
+
+    // Add player to animating list for visual highlight
+    setAnimatingPlayers(prev => [...prev, selectedPlayer.id])
+    setTimeout(() => {
+      setAnimatingPlayers(prev => prev.filter(id => id !== selectedPlayer.id))
+    }, 1200) // Match animation duration
 
     // Update lokal
     setPlayers(prev => prev.map(p =>
@@ -1007,6 +1018,15 @@ function QuizHost() {
                 const itemHeight = 80 // Height of each leaderboard item + gap
                 const topPosition = index * itemHeight
 
+                // Check if this player is being animated from +/- button
+                const isAnimating = animatingPlayers.includes(player.id)
+
+                // Enhanced glow for animating players
+                let finalGlow = glowColor
+                if (isAnimating) {
+                  finalGlow = '#3b82f6' // Blue highlight for manual points adjustment
+                }
+
                 return (
                   <div
                     key={player.id}
@@ -1016,8 +1036,11 @@ function QuizHost() {
                       top: `${topPosition}px`,
                       left: 0,
                       right: 0,
-                      transition: 'top 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease',
-                      boxShadow: glowColor ? `0 0 20px ${glowColor}, 0 0 40px ${glowColor}40` : 'none',
+                      transition: 'top 1.0s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.8s ease, transform 0.6s ease, opacity 0.6s ease',
+                      boxShadow: finalGlow ? `0 0 25px ${finalGlow}, 0 0 50px ${finalGlow}60` : 'none',
+                      transform: isAnimating ? 'scale(1.03)' : 'scale(1)',
+                      zIndex: isAnimating ? 100 : (previousRank !== -1 && previousRank !== index ? 50 : 1),
+                      transitionDelay: previousRank !== -1 && previousRank !== index ? `${Math.abs(previousRank - index) * 0.05}s` : '0s',
                     }}
                   >
                     <div className="rank">
