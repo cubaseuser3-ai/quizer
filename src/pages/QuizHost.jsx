@@ -377,22 +377,25 @@ function QuizHost() {
 
     console.log('Adjusting points:', points, 'for player:', selectedPlayer.name)
 
-    // Save previous rankings before updating
-    const sortedBefore = [...players].sort((a, b) => b.score - a.score)
-    setPreviousRankings(sortedBefore)
+    // Update players and save previous rankings in one step
+    setPlayers(prev => {
+      // Save current rankings as previous BEFORE updating
+      const sortedBefore = [...prev].sort((a, b) => b.score - a.score)
+      setPreviousRankings(sortedBefore)
+
+      // Return updated players
+      return prev.map(p =>
+        p.id === selectedPlayer.id
+          ? { ...p, score: Math.max(0, p.score + points) }
+          : p
+      )
+    })
 
     // Add player to animating list for visual highlight
     setAnimatingPlayers(prev => [...prev, selectedPlayer.id])
     setTimeout(() => {
       setAnimatingPlayers(prev => prev.filter(id => id !== selectedPlayer.id))
     }, 1200) // Match animation duration
-
-    // Update lokal
-    setPlayers(prev => prev.map(p =>
-      p.id === selectedPlayer.id
-        ? { ...p, score: Math.max(0, p.score + points) }
-        : p
-    ))
 
     // Sende Update an Server und Spieler
     socket.emit('adjust-player-points', {
@@ -1060,7 +1063,25 @@ function QuizHost() {
                       <span className="player-avatar">{player.avatar}</span>
                       <span className="player-name">{player.name}</span>
                     </div>
-                    <div className="player-score">{player.score}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div className="player-score">{player.score}</div>
+                      <button
+                        className="btn btn-sm btn-outline"
+                        onClick={() => openPointsModal(player)}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '14px',
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          borderColor: 'rgba(102, 126, 234, 0.3)',
+                          color: 'var(--primary)',
+                          fontWeight: '600'
+                        }}
+                        title="Punkte manuell anpassen"
+                      >
+                        <Plus size={14} style={{ marginRight: '4px' }} />
+                        ±
+                      </button>
+                    </div>
                   </div>
                 )
               })}
