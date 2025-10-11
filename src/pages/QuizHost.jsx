@@ -395,6 +395,14 @@ function QuizHost() {
     setAnimatingPlayers(prev => [...prev, selectedPlayer.id])
     setTimeout(() => {
       setAnimatingPlayers(prev => prev.filter(id => id !== selectedPlayer.id))
+
+      // Reset previousRankings to current state after animation completes
+      // This ensures next animation compares against the NEW current state
+      setPlayers(current => {
+        const sortedCurrent = [...current].sort((a, b) => b.score - a.score)
+        setPreviousRankings(sortedCurrent)
+        return current // Don't change players, just update previousRankings
+      })
     }, 1200) // Match animation duration
 
     // Sende Update an Server und Spieler
