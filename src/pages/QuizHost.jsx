@@ -377,9 +377,9 @@ function QuizHost() {
 
     console.log('Adjusting points:', points, 'for player:', selectedPlayer.name)
 
-    // Update players and save previous rankings in one step
+    // Update players and save previous rankings atomically
     setPlayers(prev => {
-      // Save current rankings as previous BEFORE updating
+      // Save current rankings BEFORE any changes
       const sortedBefore = [...prev].sort((a, b) => b.score - a.score)
       setPreviousRankings(sortedBefore)
 
@@ -393,17 +393,13 @@ function QuizHost() {
 
     // Add player to animating list for visual highlight
     setAnimatingPlayers(prev => [...prev, selectedPlayer.id])
+
+    // Clear animation and reset previousRankings after animation
     setTimeout(() => {
       setAnimatingPlayers(prev => prev.filter(id => id !== selectedPlayer.id))
-
-      // Reset previousRankings to current state after animation completes
-      // This ensures next animation compares against the NEW current state
-      setPlayers(current => {
-        const sortedCurrent = [...current].sort((a, b) => b.score - a.score)
-        setPreviousRankings(sortedCurrent)
-        return current // Don't change players, just update previousRankings
-      })
-    }, 1200) // Match animation duration
+      // Clear previousRankings so next click has fresh comparison
+      setPreviousRankings([])
+    }, 1500) // Slightly longer than transition to ensure animation completes
 
     // Sende Update an Server und Spieler
     socket.emit('adjust-player-points', {
