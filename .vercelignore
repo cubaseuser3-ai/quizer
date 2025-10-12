@@ -1,0 +1,13 @@
+node_modules
+server
+dist-electron
+.git
+.vercel
+*.log
+.DS_Store
+electron
+tests
+playwright-report
+test-results
+.env
+.env.local

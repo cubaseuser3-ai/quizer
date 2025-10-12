@@ -39,7 +39,7 @@ function QuizHost() {
   const [animatingPlayers, setAnimatingPlayers] = useState([]) // Players with animation highlight
 
   const joinCode = quizId.slice(-6).toUpperCase()
-  const joinUrl = `${window.location.origin}/Quiz/join?code=${joinCode}`
+  const joinUrl = `${window.location.origin}/join?code=${joinCode}`
 
   useEffect(() => {
     // Load quiz from localStorage

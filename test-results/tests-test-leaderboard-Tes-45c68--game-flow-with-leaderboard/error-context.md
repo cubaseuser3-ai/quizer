@@ -1,0 +1,150 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - 'generic "Backend v1.1.0 Uptime: 1h 6m 24s Active Rooms: 0" [ref=e3]':
+    - generic [ref=e4]: 🟢
+    - generic [ref=e5]: Backend v1.1.0
+    - generic [ref=e6]: (12.10., 21:26)
+    - generic [ref=e7]: "Uptime: 1h 6m 24s"
+  - button "v1760297246140" [ref=e9] [cursor=pointer]
+  - generic [ref=e10]:
+    - generic [ref=e13]:
+      - button "Zurück" [ref=e14] [cursor=pointer]:
+        - img [ref=e15]
+        - text: Zurück
+      - heading "Quiz erstellen" [level=1] [ref=e17]
+      - generic [ref=e18]:
+        - button "Speichern" [disabled] [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+          - text: Speichern
+        - button "Test" [disabled] [ref=e24] [cursor=pointer]:
+          - img [ref=e25]
+          - text: Test
+        - button "Speichern & Starten" [disabled] [ref=e27] [cursor=pointer]:
+          - img [ref=e28]
+          - img [ref=e32]
+          - text: Speichern & Starten
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - heading "Quiz Titel" [level=3] [ref=e38]
+          - textbox "Quiz Titel" [ref=e39]:
+            - /placeholder: Mein großes Quiz...
+            - text: Leaderboard Test Quiz
+        - generic [ref=e40] [cursor=pointer]:
+          - checkbox "🔒 Quiz mit Passwort schützen" [ref=e41]
+          - generic [ref=e42]: 🔒 Quiz mit Passwort schützen
+        - generic [ref=e43] [cursor=pointer]:
+          - checkbox "Rangliste nach jeder Frage anzeigen 🏆 Nach jeder Frage wird automatisch die Rangliste angezeigt, bevor die nächste Frage kommt." [ref=e44]
+          - generic [ref=e45]:
+            - heading "Rangliste nach jeder Frage anzeigen 🏆" [level=3] [ref=e46]
+            - generic [ref=e47]: Nach jeder Frage wird automatisch die Rangliste angezeigt, bevor die nächste Frage kommt.
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: "0"
+            - generic [ref=e51]: Fragen
+          - generic [ref=e52]:
+            - generic [ref=e53]: "0"
+            - generic [ref=e54]: Gesamt Punkte
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - heading "Fragen (0)" [level=2] [ref=e57]
+          - button "Frage hinzufügen" [active] [ref=e58] [cursor=pointer]:
+            - img [ref=e59]
+            - text: Frage hinzufügen
+        - generic [ref=e60]:
+          - heading "Noch keine Fragen" [level=3] [ref=e61]
+          - paragraph [ref=e62]: Füge deine erste Frage hinzu um zu starten
+          - button "Erste Frage erstellen" [ref=e63] [cursor=pointer]:
+            - img [ref=e64]
+            - text: Erste Frage erstellen
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - heading "Neue Frage" [level=2] [ref=e68]
+        - button [ref=e69] [cursor=pointer]:
+          - img [ref=e70]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - heading "Fragetyp" [level=4] [ref=e75]
+          - combobox "Fragetyp" [ref=e76] [cursor=pointer]:
+            - option "☑️ Multiple Choice" [selected]
+            - option "🔔 Buzzer Frage"
+            - option "✓✗ Wahr/Falsch"
+            - option "🎯 Schätzfrage (Beta)"
+            - option "📝 Lückentext (Beta)"
+            - option "🔗 Paare zuordnen (Beta)"
+            - option "💭 Offene Frage (Beta)"
+            - option "🌍 Geografie (Beta)"
+        - generic [ref=e77]:
+          - heading "Frage" [level=4] [ref=e78]
+          - textbox "Frage" [ref=e79]:
+            - /placeholder: Deine Frage...
+        - generic [ref=e80]:
+          - heading "Bild (optional) 🖼️" [level=4] [ref=e81]
+          - generic [ref=e82] [cursor=pointer]:
+            - img [ref=e83]
+            - text: Bild hochladen
+          - generic [ref=e87]: Maximal 2MB • JPG, PNG, GIF, WebP
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - heading "Antworten" [level=4] [ref=e90]
+            - button "Antwort hinzufügen" [ref=e91] [cursor=pointer]:
+              - img [ref=e92]
+              - text: Antwort hinzufügen
+          - generic [ref=e93] [cursor=pointer]:
+            - checkbox "✅ Mehrere richtige Antworten erlauben" [ref=e94]
+            - generic [ref=e95]: ✅ Mehrere richtige Antworten erlauben
+          - generic [ref=e96]:
+            - textbox "Antwort 1" [ref=e97]
+            - generic [ref=e98] [cursor=pointer]:
+              - radio "Richtig" [checked] [ref=e99]
+              - text: Richtig
+            - button "Entfernen" [ref=e100] [cursor=pointer]:
+              - img [ref=e101]
+          - generic [ref=e104]:
+            - textbox "Antwort 2" [ref=e105]
+            - generic [ref=e106] [cursor=pointer]:
+              - radio "Richtig" [ref=e107]
+              - text: Richtig
+            - button "Entfernen" [ref=e108] [cursor=pointer]:
+              - img [ref=e109]
+          - generic [ref=e112]:
+            - textbox "Antwort 3" [ref=e113]
+            - generic [ref=e114] [cursor=pointer]:
+              - radio "Richtig" [ref=e115]
+              - text: Richtig
+            - button "Entfernen" [ref=e116] [cursor=pointer]:
+              - img [ref=e117]
+          - generic [ref=e120]:
+            - textbox "Antwort 4" [ref=e121]
+            - generic [ref=e122] [cursor=pointer]:
+              - radio "Richtig" [ref=e123]
+              - text: Richtig
+            - button "Entfernen" [ref=e124] [cursor=pointer]:
+              - img [ref=e125]
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - heading "Zeit-Modus ⏱️" [level=4] [ref=e130]
+            - combobox "Zeit-Modus ⏱️" [ref=e131] [cursor=pointer]:
+              - option "⏱️ Feste Zeit" [selected]
+              - option "👥 Bis alle geantwortet haben"
+              - option "∞ Unbegrenzt (Moderator entscheidet)"
+          - generic [ref=e132]:
+            - heading "Zeit (Sekunden)" [level=4] [ref=e133]
+            - spinbutton "Zeit (Sekunden)" [ref=e134]: "30"
+          - generic [ref=e135]:
+            - heading "Punkte" [level=4] [ref=e136]
+            - spinbutton "Punkte" [ref=e137]: "100"
+      - generic [ref=e138]:
+        - button "Abbrechen" [ref=e139] [cursor=pointer]
+        - button "Speichern" [ref=e140] [cursor=pointer]:
+          - img [ref=e141]
+          - text: Speichern
+    - generic [ref=e145]:
+      - button "+" [ref=e146] [cursor=pointer]
+      - generic "Zurücksetzen" [ref=e147] [cursor=pointer]: 100%
+      - button "−" [ref=e148] [cursor=pointer]
+    - button "Console Logs öffnen (Ctrl/Cmd + Shift + L)" [ref=e149] [cursor=pointer]:
+      - img [ref=e150]
+```

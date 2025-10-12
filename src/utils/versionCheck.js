@@ -6,10 +6,10 @@ let currentVersion = null;
 export const checkForUpdates = async () => {
   try {
     // Hole aktuelle Version vom Server (mit Cache-Buster)
-    const response = await fetch(`/Quiz/version.json?t=${Date.now()}`);
+    const response = await fetch(`/version.json?t=${Date.now()}`);
 
     if (!response.ok) {
-      console.log('Version check failed - server response:', response.status);
+      // Silent fail - version check ist optional
       return;
     }
 
@@ -36,7 +36,7 @@ export const checkForUpdates = async () => {
       }
     }
   } catch (error) {
-    console.error('Version check error:', error);
+    // Silent fail - version check ist optional
   }
 };
 

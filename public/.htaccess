@@ -1,10 +1,10 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /Quiz/
+  RewriteBase /MyTechQuizer/
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /Quiz/index.html [L]
+  RewriteRule . /MyTechQuizer/index.html [L]
 </IfModule>
 
 # Cache Control Headers

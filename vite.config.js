@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/Quiz/',  // Wichtig für Deployment im Unterordner!
+  base: '/',  // Root path für Vercel
   build: {
     // Cache Busting: Generiert eindeutige Dateinamen mit Hash
     rollupOptions: {

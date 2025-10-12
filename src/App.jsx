@@ -11,7 +11,7 @@ import './App.css'
 
 function App() {
   return (
-    <Router basename="/Quiz">
+    <Router basename="/">
       <ServerStatus />
       <VersionDisplay />
       <Routes>
