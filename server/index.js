@@ -48,14 +48,25 @@ function formatUptime(seconds) {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NODE_ENV === 'production'
-      ? [
-          'https://sound77.infinityfreeapp.com',
-          'https://*.vercel.app',
-          'https://*.onrender.com',
-          'http://localhost:5173'
-        ]
-      : '*',
+    origin: (origin, callback) => {
+      // Allow all Vercel domains, Render domains, InfinityFree, and localhost
+      const allowedOrigins = [
+        'https://sound77.infinityfreeapp.com',
+        'http://localhost:5173',
+        'http://localhost:5174'
+      ]
+
+      // Check if origin matches allowed patterns
+      if (!origin ||
+          allowedOrigins.includes(origin) ||
+          origin.endsWith('.vercel.app') ||
+          origin.endsWith('.onrender.com')) {
+        callback(null, true)
+      } else {
+        console.log('❌ CORS blocked origin:', origin)
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true
   },
