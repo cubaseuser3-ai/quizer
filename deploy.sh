@@ -42,6 +42,12 @@ fi
 echo "✅ Dependencies installiert!"
 echo ""
 
+# Update version.json before build
+echo "📝 Aktualisiere Version..."
+node update-version.js
+echo "✅ Version aktualisiert!"
+echo ""
+
 # Build the app
 echo "🔨 Baue Production Version..."
 npm run build
@@ -85,8 +91,15 @@ echo "   → Gehe zu netlify.com/drop"
 echo "   → Ziehe den 'dist' Ordner auf die Seite"
 echo "   → Fertig!"
 echo ""
-echo "3️⃣  Mit Vercel CLI:"
+echo "3️⃣  InfinityFree FTP:"
+echo "   → Stelle sicher dass version.json mit hochgeladen wird!"
+echo "   → Lade alle Dateien aus 'dist' in htdocs hoch"
+echo ""
+echo "4️⃣  Mit Vercel CLI:"
 echo "   → npm install -g vercel"
 echo "   → vercel --prod"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "⚠️  WICHTIG: Stelle sicher dass version.json hochgeladen wird!"
+echo ""

@@ -64,79 +64,102 @@ function QuizHost() {
       return
     }
 
-    // Connect socket
-    socket.connect()
+    // Only connect socket and create room if NOT in test mode
+    if (!isTestMode) {
+      // Connect socket
+      socket.connect()
 
-    // Create room
-    socket.emit('create-room', {
-      quizId,
-      quizData: foundQuiz
-    })
+      // Create room
+      socket.emit('create-room', {
+        quizId,
+        quizData: foundQuiz
+      })
 
-    // Socket event listeners
-    socket.on('room-created', (data) => {
-      setRoomCode(data.roomCode)
-      console.log('Room created:', data.roomCode)
-    })
+      // Socket event listeners
+      socket.on('room-created', (data) => {
+        setRoomCode(data.roomCode)
+        console.log('Room created:', data.roomCode)
+      })
 
-    socket.on('player-joined', (data) => {
-      console.log('Player joined:', data.player)
-      setPlayers(data.players)
-    })
+      socket.on('player-joined', (data) => {
+        console.log('Player joined:', data.player)
+        // Merge server players with local demo players
+        setPlayers(prev => {
+          // Behalte alle Demo-Spieler
+          const demoPlayers = prev.filter(p => p.isDemo)
+          // Merge mit echten Spielern vom Server
+          const realPlayers = data.players.filter(p => !p.isDemo)
+          return [...demoPlayers, ...realPlayers]
+        })
+      })
 
-    socket.on('player-left', (data) => {
-      console.log('Player left:', data.playerName)
-      setPlayers(data.players)
-    })
+      socket.on('player-left', (data) => {
+        console.log('Player left:', data.playerName)
+        // Merge server players with local demo players
+        setPlayers(prev => {
+          // Behalte alle Demo-Spieler
+          const demoPlayers = prev.filter(p => p.isDemo)
+          // Merge mit echten Spielern vom Server
+          const realPlayers = data.players.filter(p => !p.isDemo)
+          return [...demoPlayers, ...realPlayers]
+        })
+      })
 
-    socket.on('player-answered', (data) => {
-      console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗', data.responseTime + 's')
-      // Update player list with answer status
-      setPlayers(prev => prev.map(p =>
-        p.id === data.playerId
-          ? {
-              ...p,
-              hasAnswered: true,
-              correct: data.correct,
-              responseTime: data.responseTime,
-              bonusPoints: data.bonusPoints || 0
-            }
-          : p
-      ))
-    })
+      socket.on('player-answered', (data) => {
+        console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗', data.responseTime + 's')
+        // Update player list with answer status
+        setPlayers(prev => prev.map(p =>
+          p.id === data.playerId
+            ? {
+                ...p,
+                hasAnswered: true,
+                correct: data.correct,
+                responseTime: data.responseTime,
+                bonusPoints: data.bonusPoints || 0
+              }
+            : p
+        ))
+      })
 
-    socket.on('buzzer-pressed', (data) => {
-      console.log('Buzzer pressed by:', data.playerName)
+      socket.on('buzzer-pressed', (data) => {
+        console.log('Buzzer pressed by:', data.playerName)
 
-      // Lock this player's buzzer
-      setBuzzerLockedPlayers(prev => [...prev, data.playerId])
+        // Lock this player's buzzer
+        setBuzzerLockedPlayers(prev => [...prev, data.playerId])
 
-      setBuzzerPresses(prev => [...prev, {
-        playerId: data.playerId,
-        playerName: data.playerName,
-        playerAvatar: data.playerAvatar,
-        timestamp: data.timestamp
-      }])
-    })
+        setBuzzerPresses(prev => [...prev, {
+          playerId: data.playerId,
+          playerName: data.playerName,
+          playerAvatar: data.playerAvatar,
+          timestamp: data.timestamp
+        }])
+      })
 
-    socket.on('player-score-updated', (data) => {
-      console.log('Player score updated:', data.playerName, data.newScore)
-      setPlayers(prev => prev.map(p =>
-        p.id === data.playerId
-          ? { ...p, score: data.newScore }
-          : p
-      ))
-    })
+      socket.on('player-score-updated', (data) => {
+        console.log('Player score updated:', data.playerName, data.newScore)
+        setPlayers(prev => prev.map(p =>
+          p.id === data.playerId
+            ? { ...p, score: data.newScore }
+            : p
+        ))
+      })
+    } else {
+      // In test mode, set a dummy room code for display
+      setRoomCode('TEST-MODE')
+      console.log('🧪 Test mode: Skipping socket connection and room creation')
+    }
 
     // Cleanup
     return () => {
-      socket.off('room-created')
-      socket.off('player-joined')
-      socket.off('player-left')
-      socket.off('player-answered')
-      socket.off('buzzer-pressed')
-      socket.off('player-score-updated')
-      socket.disconnect()
+      if (!isTestMode) {
+        socket.off('room-created')
+        socket.off('player-joined')
+        socket.off('player-left')
+        socket.off('player-answered')
+        socket.off('buzzer-pressed')
+        socket.off('player-score-updated')
+        socket.disconnect()
+      }
     }
   }, [quizId, navigate])
 
@@ -223,14 +246,16 @@ function QuizHost() {
       setBuzzerLockedPlayers([]) // Unlock all buzzers at start
       setPlayersWhoGotPoints([]) // Reset points tracking
 
-      // Unlock all buzzers for clients
-      socket.emit('unlock-buzzers', {
-        roomCode: joinCode,
-        playerIds: 'all'
-      })
+      // Unlock all buzzers for clients (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('unlock-buzzers', {
+          roomCode: joinCode,
+          playerIds: 'all'
+        })
 
-      // Emit game start to all players
-      socket.emit('start-game', { roomCode: joinCode })
+        // Emit game start to all players
+        socket.emit('start-game', { roomCode: joinCode })
+      }
       console.log('Game started successfully')
 
       // Simuliere Demo-Spieler Antworten
@@ -257,17 +282,21 @@ function QuizHost() {
       setBuzzerLockedPlayers([]) // Unlock all buzzers
       setPlayersWhoGotPoints([]) // Reset points tracking
 
-      // Unlock all buzzers for clients
-      socket.emit('unlock-buzzers', {
-        roomCode: joinCode,
-        playerIds: 'all'
-      })
+      // Unlock all buzzers for clients (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('unlock-buzzers', {
+          roomCode: joinCode,
+          playerIds: 'all'
+        })
+      }
 
       // Reset player answer status
       setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false, responseTime: null, bonusPoints: 0 })))
 
-      // Emit next question
-      socket.emit('next-question', { roomCode: joinCode })
+      // Emit next question (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('next-question', { roomCode: joinCode })
+      }
 
       // Simuliere Demo-Spieler Antworten
       if (isTestMode) {
@@ -277,8 +306,10 @@ function QuizHost() {
       setGameState('final')
       // Konfetti starten
       createConfetti()
-      // Game over - show results
-      socket.emit('show-results', { roomCode: joinCode })
+      // Game over - show results (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('show-results', { roomCode: joinCode })
+      }
     }
   }
 
@@ -316,7 +347,9 @@ function QuizHost() {
           const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
           setPreviousRankings(currentRankings)
           setGameState('results')
-          socket.emit('show-results', { roomCode: joinCode })
+          if (!isTestMode) {
+            socket.emit('show-results', { roomCode: joinCode })
+          }
         } else {
           nextQuestion()
         }
@@ -329,7 +362,9 @@ function QuizHost() {
           const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
           setPreviousRankings(currentRankings)
           setGameState('results')
-          socket.emit('show-results', { roomCode: joinCode })
+          if (!isTestMode) {
+            socket.emit('show-results', { roomCode: joinCode })
+          }
         }, 2000)
       }
     }
@@ -337,8 +372,10 @@ function QuizHost() {
 
   const handleRestartQuiz = () => {
     if (window.confirm('🔄 Quiz neu starten?\n\nAlle Punkte werden zurückgesetzt und das Quiz beginnt von vorne.')) {
-      // Send restart event to server
-      socket.emit('restart-game', { roomCode: joinCode })
+      // Send restart event to server (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('restart-game', { roomCode: joinCode })
+      }
 
       // Update local state
       setGameState('lobby')
@@ -354,7 +391,9 @@ function QuizHost() {
 
   const handleEndQuiz = () => {
     if (window.confirm('❌ Quiz beenden?\n\nDas Quiz wird beendet und alle Spieler werden getrennt.')) {
-      socket.disconnect()
+      if (!isTestMode) {
+        socket.disconnect()
+      }
       navigate('/')
     }
   }
@@ -401,12 +440,14 @@ function QuizHost() {
       setPreviousRankings([])
     }, 1500) // Slightly longer than transition to ensure animation completes
 
-    // Sende Update an Server und Spieler
-    socket.emit('adjust-player-points', {
-      roomCode: joinCode,
-      playerId: selectedPlayer.id,
-      points: points
-    })
+    // Sende Update an Server und Spieler (only if not in test mode)
+    if (!isTestMode) {
+      socket.emit('adjust-player-points', {
+        roomCode: joinCode,
+        playerId: selectedPlayer.id,
+        points: points
+      })
+    }
 
     setShowPointsModal(false)
     setSelectedPlayer(null)
@@ -439,13 +480,15 @@ function QuizHost() {
     setBuzzerLockedPlayers([])
     setPlayersWhoGotPoints([]) // Reset for next question
 
-    console.log('   Emitting unlock-buzzers event for ALL players')
-    socket.emit('unlock-buzzers', {
-      roomCode: joinCode,
-      playerIds: 'all'
-    })
+    if (!isTestMode) {
+      console.log('   Emitting unlock-buzzers event for ALL players')
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: 'all'
+      })
+      console.log('✅ unlock-buzzers event sent')
+    }
 
-    console.log('✅ unlock-buzzers event sent')
     setShowUnlockWarning(false) // Close warning if open
   }
 
@@ -455,13 +498,14 @@ function QuizHost() {
 
     setBuzzerLockedPlayers(prev => prev.filter(id => id !== playerId))
 
-    console.log('   Emitting unlock-buzzers event for player:', playerId)
-    socket.emit('unlock-buzzers', {
-      roomCode: joinCode,
-      playerIds: [playerId]
-    })
-
-    console.log('✅ unlock-buzzers event sent for player:', playerId)
+    if (!isTestMode) {
+      console.log('   Emitting unlock-buzzers event for player:', playerId)
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: [playerId]
+      })
+      console.log('✅ unlock-buzzers event sent for player:', playerId)
+    }
   }
 
   // Ranglisten-Animation vorbereiten
@@ -481,12 +525,14 @@ function QuizHost() {
   const awardPoints = (playerId, playerName) => {
     const points = currentQuestion.points
 
-    // Send to backend to update player score
-    socket.emit('award-buzzer-points', {
-      roomCode: joinCode,
-      playerId: playerId,
-      points: points
-    })
+    // Send to backend to update player score (only if not in test mode)
+    if (!isTestMode) {
+      socket.emit('award-buzzer-points', {
+        roomCode: joinCode,
+        playerId: playerId,
+        points: points
+      })
+    }
 
     // Update local players state
     setPlayers(prev => prev.map(p =>

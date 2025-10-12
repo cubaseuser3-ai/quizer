@@ -7,9 +7,17 @@ function VersionDisplay() {
 
   useEffect(() => {
     fetch('/version.json')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        return res.json()
+      })
       .then(data => setVersionInfo(data))
-      .catch(err => console.error('Failed to load version info:', err))
+      .catch(err => {
+        // Silently fail if version.json doesn't exist (e.g., in development)
+        // console.error('Failed to load version info:', err)
+      })
   }, [])
 
   if (!versionInfo) return null

@@ -84,9 +84,13 @@ io.on('connection', (socket) => {
   // Player joins a room
   socket.on('join-room', (data) => {
     const { roomCode, playerName, playerAvatar } = data
+    console.log(`Player ${playerName} attempting to join room: ${roomCode}`)
+    console.log(`Available rooms:`, Array.from(gameRooms.keys()))
+
     const room = gameRooms.get(roomCode)
 
     if (!room) {
+      console.log(`❌ Room ${roomCode} not found! Available: ${Array.from(gameRooms.keys()).join(', ')}`)
       socket.emit('error', { message: 'Room not found' })
       return
     }
