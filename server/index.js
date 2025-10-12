@@ -49,7 +49,12 @@ function formatUptime(seconds) {
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.NODE_ENV === 'production'
-      ? ['https://sound77.infinityfreeapp.com', 'https://*.onrender.com', 'http://localhost:5173']
+      ? [
+          'https://sound77.infinityfreeapp.com',
+          'https://*.vercel.app',
+          'https://*.onrender.com',
+          'http://localhost:5173'
+        ]
       : '*',
     methods: ['GET', 'POST'],
     credentials: true

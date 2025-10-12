@@ -3,6 +3,10 @@ import { io } from 'socket.io-client'
 // Backend URL - wird automatisch gesetzt basierend auf Umgebung
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
 
+// Debug: Log socket URL
+console.log('🔌 Socket URL:', SOCKET_URL)
+console.log('🔍 VITE_SOCKET_URL env:', import.meta.env.VITE_SOCKET_URL)
+
 // Socket.io Client-Instanz
 export const socket = io(SOCKET_URL, {
   autoConnect: false, // Manuell verbinden wenn benötigt
