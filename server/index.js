@@ -166,6 +166,12 @@ io.on('connection', (socket) => {
         players: room.players
       })
 
+      // Update leaderboard for spectators
+      io.to(roomCode).emit('leaderboard-update', {
+        players: room.players,
+        quizTitle: room.quiz?.title || 'Quiz'
+      })
+
       // Send current room state to new player
       const stateData = {
         state: room.state,
@@ -325,6 +331,12 @@ io.on('connection', (socket) => {
       newScore: player.score
     })
 
+    // Update leaderboard for spectators
+    io.to(roomCode).emit('leaderboard-update', {
+      players: room.players,
+      quizTitle: room.quiz?.title || 'Quiz'
+    })
+
     console.log(`${points} points awarded to ${player.name} in room ${roomCode}`)
   })
 
@@ -465,6 +477,27 @@ io.on('connection', (socket) => {
         }
       })
     }
+  })
+
+  // Join leaderboard as spectator
+  socket.on('join-leaderboard', (data) => {
+    const { roomCode } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room) {
+      socket.emit('error', { message: 'Room not found' })
+      return
+    }
+
+    // Join room as spectator (not as player)
+    socket.join(roomCode)
+    console.log(`Leaderboard spectator joined room ${roomCode}`)
+
+    // Send initial leaderboard data
+    socket.emit('leaderboard-update', {
+      players: room.players,
+      quizTitle: room.quiz?.title || 'Quiz'
+    })
   })
 
   // Handle disconnection
