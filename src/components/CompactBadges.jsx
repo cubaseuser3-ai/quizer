@@ -84,6 +84,17 @@ function CompactBadges() {
 
   return (
     <div className="compact-badges">
+      {/* Backend Status - ALWAYS VISIBLE */}
+      {backendStatus && (
+        <div
+          className="badge-item backend-badge"
+          title={`Backend v${backendStatus.version}\nStatus: ${backendStatus.status}\nActive Rooms: ${backendStatus.activeRooms}`}
+        >
+          <span className="status-dot"></span>
+          <span>Backend v{backendStatus.version}</span>
+        </div>
+      )}
+
       {/* Expanded Content (when toggled) */}
       {isExpanded && (
         <>
@@ -93,17 +104,6 @@ function CompactBadges() {
             <span className="badge-value" onClick={resetZoom}>{zoom}%</span>
             <button className="badge-btn" onClick={() => handleZoom(10)}>+</button>
           </div>
-
-          {/* Backend Status */}
-          {backendStatus && (
-            <div
-              className="badge-item backend-badge"
-              title={`Backend v${backendStatus.version}\nStatus: ${backendStatus.status}\nActive Rooms: ${backendStatus.activeRooms}`}
-            >
-              <span className="status-dot"></span>
-              <span>Backend v{backendStatus.version}</span>
-            </div>
-          )}
         </>
       )}
 
