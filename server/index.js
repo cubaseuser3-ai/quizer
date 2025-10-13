@@ -68,6 +68,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() })
 })
 
+// Status endpoint for CompactBadges
+app.get('/status', (req, res) => {
+  const uptime = process.uptime()
+  const hours = Math.floor(uptime / 3600)
+  const minutes = Math.floor((uptime % 3600) / 60)
+  const seconds = Math.floor(uptime % 60)
+
+  res.json({
+    status: 'OK',
+    version: '1.1.0',
+    uptime: `${hours}h ${minutes}m ${seconds}s`,
+    activeRooms: gameRooms.size,
+    totalPlayers: Array.from(gameRooms.values()).reduce((sum, room) => sum + room.players.length, 0),
+    timestamp: new Date().toISOString()
+  })
+})
+
 // Game rooms storage
 const gameRooms = new Map()
 
