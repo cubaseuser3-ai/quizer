@@ -167,6 +167,27 @@ io.on('connection', (socket) => {
     }
   })
 
+  // Spectator joins leaderboard (read-only)
+  socket.on('join-leaderboard', (data) => {
+    const { roomCode } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room) {
+      socket.emit('error', { message: 'Room not found' })
+      return
+    }
+
+    // Join room as spectator
+    socket.join(roomCode)
+    console.log(`👁️  Spectator joined leaderboard: ${socket.id} in room ${roomCode}`)
+
+    // Send current leaderboard state immediately
+    socket.emit('leaderboard-update', {
+      players: room.players,
+      quizTitle: room.quiz?.title || 'Quiz'
+    })
+  })
+
   // Host starts game
   socket.on('start-game', (data) => {
     const { roomCode } = data
