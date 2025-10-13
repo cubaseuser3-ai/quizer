@@ -6,195 +6,156 @@ import cors from 'cors'
 const app = express()
 const httpServer = createServer(app)
 
-// Server version - update this when deploying changes
-const SERVER_VERSION = '1.1.0' // Game restart fix + Image reveal animations
-const SERVER_BUILD_TIME = new Date().toISOString()
+// CORS Configuration
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true)
 
-app.use(cors())
-app.use(express.json({ limit: '50mb' })) // Increase payload limit for large images
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
+    // Allow all origins that match these patterns
+    const allowedPatterns = [
+      /^https?:\/\/localhost(:\d+)?$/,
+      /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+      /\.vercel\.app$/,
+      /\.netlify\.app$/,
+      /\.render\.com$/
+    ]
+
+    const isAllowed = allowedPatterns.some(pattern => pattern.test(origin))
+    callback(null, isAllowed)
+  },
+  credentials: true
+}))
+
+// Socket.IO with CORS
+const io = new Server(httpServer, {
+  cors: {
+    origin: function(origin, callback) {
+      if (!origin) return callback(null, true)
+
+      const allowedPatterns = [
+        /^https?:\/\/localhost(:\d+)?$/,
+        /^https?:\/\/127\.0\.0\.1(:\d+)?$/,
+        /\.vercel\.app$/,
+        /\.netlify\.app$/,
+        /\.render\.com$/
+      ]
+
+      const isAllowed = allowedPatterns.some(pattern => pattern.test(origin))
+      callback(null, isAllowed)
+    },
+    credentials: true,
+    methods: ["GET", "POST"]
+  },
+  transports: ['websocket', 'polling']
+})
+
+const PORT = process.env.PORT || 3001
 
 // Health check endpoint
 app.get('/', (req, res) => {
   res.json({
-    status: 'OK',
-    message: 'MyTech Quizer Backend is running',
-    version: SERVER_VERSION,
-    buildTime: SERVER_BUILD_TIME,
+    status: 'online',
+    message: 'MyTech Quizer Backend Server',
+    version: '1.1.0',
+    timestamp: new Date().toISOString(),
     activeRooms: gameRooms.size,
-    uptime: process.uptime(),
-    uptimeFormatted: formatUptime(process.uptime())
+    totalPlayers: Array.from(gameRooms.values()).reduce((sum, room) => sum + room.players.length, 0)
   })
 })
 
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    version: SERVER_VERSION,
-    buildTime: SERVER_BUILD_TIME,
-    activeRooms: gameRooms.size,
-    uptime: process.uptime(),
-    uptimeFormatted: formatUptime(process.uptime())
-  })
+  res.json({ status: 'ok', uptime: process.uptime() })
 })
 
-// Helper function to format uptime
-function formatUptime(seconds) {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${hours}h ${minutes}m ${secs}s`
-}
-
-const io = new Server(httpServer, {
-  cors: {
-    origin: (origin, callback) => {
-      // Allow all Vercel domains, Render domains, InfinityFree, and localhost
-      const allowedOrigins = [
-        'https://sound77.infinityfreeapp.com',
-        'http://localhost:5173',
-        'http://localhost:5174'
-      ]
-
-      // Check if origin matches allowed patterns
-      if (!origin ||
-          allowedOrigins.includes(origin) ||
-          origin.endsWith('.vercel.app') ||
-          origin.endsWith('.onrender.com')) {
-        callback(null, true)
-      } else {
-        console.log('❌ CORS blocked origin:', origin)
-        callback(new Error('Not allowed by CORS'))
-      }
-    },
-    methods: ['GET', 'POST'],
-    credentials: true
-  },
-  maxHttpBufferSize: 50e6 // 50MB limit for Socket.io messages (large images)
-})
-
-// Store active game rooms
+// Game rooms storage
 const gameRooms = new Map()
 
 io.on('connection', (socket) => {
-  console.log('User connected:', socket.id)
+  console.log('🟢 Client connected:', socket.id)
 
   // Host creates a room
   socket.on('create-room', (data) => {
     const { quizId, quizData } = data
     const roomCode = quizId.slice(-6).toUpperCase()
 
+    // Create room
     gameRooms.set(roomCode, {
       host: socket.id,
       quiz: quizData,
       players: [],
+      state: 'lobby',
       currentQuestion: 0,
-      state: 'lobby'
+      questionAnswers: {}
     })
 
     socket.join(roomCode)
     socket.emit('room-created', { roomCode })
-    console.log('Room created:', roomCode)
+    console.log(`🏠 Room created: ${roomCode} by ${socket.id}`)
   })
 
-  // Player joins a room
+  // Player joins room
   socket.on('join-room', (data) => {
     const { roomCode, playerName, playerAvatar } = data
-    console.log(`Player ${playerName} attempting to join room: ${roomCode}`)
-    console.log(`Available rooms:`, Array.from(gameRooms.keys()))
-
     const room = gameRooms.get(roomCode)
 
     if (!room) {
-      console.log(`❌ Room ${roomCode} not found! Available: ${Array.from(gameRooms.keys()).join(', ')}`)
       socket.emit('error', { message: 'Room not found' })
       return
     }
 
-    // Check if player is reconnecting (same name exists)
-    const existingPlayer = room.players.find(p => p.name === playerName)
+    // Check if player already exists (reconnection)
+    const existingPlayer = room.players.find(p => p.id === socket.id || p.name === playerName)
 
     if (existingPlayer) {
-      // Player is reconnecting - update their socket ID and clear disconnect flag
+      // Reconnection - update socket ID but keep score
       existingPlayer.id = socket.id
-      existingPlayer.disconnected = false
-      delete existingPlayer.disconnectTime
+      console.log(`🔄 Player reconnected: ${playerName} (${socket.id})`)
+
       socket.join(roomCode)
 
-      // Send current room state with their score and current question
-      const stateData = {
+      // Send room state including current score
+      socket.emit('room-state', {
         state: room.state,
         players: room.players,
-        currentQuestion: room.currentQuestion,
+        question: room.state === 'question' ? room.quiz.questions[room.currentQuestion] : null,
         reconnected: true
-      }
-
-      // If game is in progress, send current question data
-      if (room.state === 'question' && room.currentQuestion < room.quiz.questions.length) {
-        const question = room.quiz.questions[room.currentQuestion]
-        stateData.question = {
-          type: question.type,
-          question: question.question,
-          answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
-          timeLimit: question.timeLimit,
-          points: question.points,
-          image: question.image
-        }
-        stateData.questionIndex = room.currentQuestion
-        stateData.totalQuestions = room.quiz.questions.length
-      }
-
-      socket.emit('room-state', stateData)
-
-      console.log(`Player ${playerName} reconnected to room ${roomCode}`)
+      })
     } else {
-      // New player joining
+      // New player
       const player = {
         id: socket.id,
         name: playerName,
         avatar: playerAvatar,
-        score: 0,
-        ready: false
+        score: 0
       }
 
       room.players.push(player)
       socket.join(roomCode)
 
-      // Notify all in room about new player
+      // Notify everyone
       io.to(roomCode).emit('player-joined', {
-        player,
+        player: player,
         players: room.players
       })
 
-      // Update leaderboard for spectators
-      io.to(roomCode).emit('leaderboard-update', {
-        players: room.players,
-        quizTitle: room.quiz?.title || 'Quiz'
-      })
-
-      // Send current room state to new player
-      const stateData = {
+      // Send room state to joining player
+      socket.emit('room-state', {
         state: room.state,
         players: room.players,
-        currentQuestion: room.currentQuestion,
-        lateJoin: room.state === 'question' // Mark as late join if game is in progress
-      }
+        lateJoin: room.state !== 'lobby'
+      })
 
-      socket.emit('room-state', stateData)
-
-      console.log(`Player ${playerName} joined room ${roomCode}${room.state === 'question' ? ' (late join)' : ''}`)
+      console.log(`👤 Player joined: ${playerName} (${socket.id}) in room ${roomCode}`)
     }
   })
 
-  // Host starts the game
+  // Host starts game
   socket.on('start-game', (data) => {
     const { roomCode } = data
     const room = gameRooms.get(roomCode)
 
-    if (!room || room.host !== socket.id) {
-      socket.emit('error', { message: 'Unauthorized' })
-      return
-    }
+    if (!room || room.host !== socket.id) return
 
     room.state = 'question'
     room.currentQuestion = 0
@@ -202,22 +163,13 @@ io.on('connection', (socket) => {
     const question = room.quiz.questions[0]
 
     io.to(roomCode).emit('game-started', {
-      question: {
-        type: question.type,
-        question: question.question,
-        answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
-        timeLimit: question.timeLimit,
-        points: question.points,
-        image: question.image
-      },
-      questionIndex: 0,
-      totalQuestions: room.quiz.questions.length
+      question: question
     })
 
-    console.log('Game started in room:', roomCode)
+    console.log(`🎮 Game started in room ${roomCode}`)
   })
 
-  // Player submits an answer
+  // Player submits answer
   socket.on('submit-answer', (data) => {
     const { roomCode, answer, responseTime } = data
     const room = gameRooms.get(roomCode)
@@ -228,10 +180,11 @@ io.on('connection', (socket) => {
     if (!player) return
 
     const currentQuestion = room.quiz.questions[room.currentQuestion]
+
+    // Check if answer is correct
     const isCorrect = answer === currentQuestion.correctAnswer
 
-    // Initialize answers array for this question if not exists
-    if (!room.questionAnswers) room.questionAnswers = []
+    // Initialize answer tracking for this question
     if (!room.questionAnswers[room.currentQuestion]) {
       room.questionAnswers[room.currentQuestion] = []
     }
@@ -284,7 +237,8 @@ io.on('connection', (socket) => {
       playerAvatar: player.avatar,
       correct: isCorrect,
       responseTime: responseTime,
-      bonusPoints: bonusPoints
+      bonusPoints: bonusPoints,
+      newScore: player.score  // Include updated score with bonus points
     })
   })
 
@@ -306,7 +260,7 @@ io.on('connection', (socket) => {
       timestamp: Date.now()
     })
 
-    console.log(`Buzzer pressed by ${player.name} in room ${roomCode}`)
+    console.log(`🔔 Buzzer pressed by ${player.name} in room ${roomCode}`)
   })
 
   // Award buzzer points (host only)
@@ -328,6 +282,13 @@ io.on('connection', (socket) => {
     // Notify the player about their points
     io.to(playerId).emit('buzzer-points-awarded', {
       points: points,
+      newScore: player.score
+    })
+
+    // Notify the HOST about the score update
+    io.to(room.host).emit('player-score-updated', {
+      playerId: playerId,
+      playerName: player.name,
       newScore: player.score
     })
 
@@ -363,67 +324,87 @@ io.on('connection', (socket) => {
 
     room.currentQuestion++
 
-    if (room.currentQuestion >= room.quiz.questions.length) {
-      // Game over
+    if (room.currentQuestion < room.quiz.questions.length) {
+      room.state = 'question'
+      const question = room.quiz.questions[room.currentQuestion]
+
+      io.to(roomCode).emit('next-question', {
+        question: question
+      })
+    } else {
       room.state = 'final'
       const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score)
 
       io.to(roomCode).emit('game-over', {
-        players: sortedPlayers,
-        winner: sortedPlayers[0]
-      })
-
-      console.log('Game over in room:', roomCode)
-    } else {
-      // Next question
-      const question = room.quiz.questions[room.currentQuestion]
-
-      io.to(roomCode).emit('next-question', {
-        question: {
-          type: question.type,
-          question: question.question,
-          answers: question.type === 'multiple' || question.type === 'truefalse' ? question.answers : undefined,
-          timeLimit: question.timeLimit,
-          points: question.points,
-          image: question.image
-        },
-        questionIndex: room.currentQuestion,
-        totalQuestions: room.quiz.questions.length
+        players: sortedPlayers
       })
     }
   })
 
-  // Punkte manuell anpassen
+  // Adjust player points (host only)
   socket.on('adjust-player-points', (data) => {
     const { roomCode, playerId, points } = data
     const room = gameRooms.get(roomCode)
 
-    if (!room) return
+    if (!room || room.host !== socket.id) {
+      socket.emit('error', { message: 'Unauthorized' })
+      return
+    }
 
     const player = room.players.find(p => p.id === playerId)
     if (!player) return
 
-    const oldScore = player.score
+    // Adjust points (can be negative)
     player.score = Math.max(0, player.score + points)
 
-    console.log(`Points adjusted: ${player.name} ${points > 0 ? '+' : ''}${points} (${oldScore} → ${player.score})`)
-
-    // Notify all players about updated score
+    // Notify everyone in the room about the score update
     io.to(roomCode).emit('player-score-updated', {
       playerId: player.id,
       playerName: player.name,
-      newScore: player.score,
-      pointsAdjusted: points
+      newScore: player.score
     })
 
-    // Sende aktualisierte Rangliste an alle Spieler
-    const sortedPlayers = [...room.players].sort((a, b) => b.score - a.score)
+    // Update leaderboard for spectators
     io.to(roomCode).emit('leaderboard-update', {
-      players: sortedPlayers
+      players: room.players,
+      quizTitle: room.quiz?.title || 'Quiz'
     })
+
+    console.log(`Points adjusted for ${player.name}: ${points > 0 ? '+' : ''}${points} (new score: ${player.score})`)
   })
 
-  // Quiz neu starten
+  // Unlock buzzers (host only)
+  socket.on('unlock-buzzers', (data) => {
+    const { roomCode, playerIds } = data
+    const room = gameRooms.get(roomCode)
+
+    if (!room || room.host !== socket.id) {
+      socket.emit('error', { message: 'Unauthorized' })
+      return
+    }
+
+    if (playerIds === 'all') {
+      // Unlock all players' buzzers
+      room.players.forEach(player => {
+        io.to(player.id).emit('buzzer-unlocked', {
+          playerId: player.id,
+          playerIds: 'all'
+        })
+      })
+      console.log(`🔓 All buzzers unlocked in room ${roomCode}`)
+    } else {
+      // Unlock specific players
+      playerIds.forEach(playerId => {
+        io.to(playerId).emit('buzzer-unlocked', {
+          playerId: playerId,
+          playerIds: playerIds
+        })
+      })
+      console.log(`🔓 Buzzers unlocked for ${playerIds.length} players in room ${roomCode}`)
+    }
+  })
+
+  // Restart game (host only)
   socket.on('restart-game', (data) => {
     const { roomCode } = data
     const room = gameRooms.get(roomCode)
@@ -436,124 +417,76 @@ io.on('connection', (socket) => {
     // Reset game state
     room.state = 'lobby'
     room.currentQuestion = 0
-    room.questionAnswers = []
+    room.questionAnswers = {}
 
     // Reset all player scores
     room.players.forEach(player => {
       player.score = 0
-      player.hasAnswered = false
-      player.correct = false
-      player.ready = false
     })
 
-    // Notify all players about game restart
+    // Notify all players about restart
     io.to(roomCode).emit('game-restarted', {
       players: room.players
     })
 
-    console.log(`Game restarted in room ${roomCode}`)
+    console.log(`🔄 Game restarted in room ${roomCode}`)
   })
 
-  // Buzzer freigeben
-  socket.on('unlock-buzzers', (data) => {
-    const { roomCode, playerIds } = data
+  // Player leaves room
+  socket.on('leave-room', (data) => {
+    const { roomCode } = data
     const room = gameRooms.get(roomCode)
 
     if (!room) return
 
-    console.log(`🔓 Server received unlock-buzzers:`, { roomCode, playerIds })
+    // Remove player from room
+    const playerIndex = room.players.findIndex(p => p.id === socket.id)
+    if (playerIndex !== -1) {
+      const player = room.players[playerIndex]
+      room.players.splice(playerIndex, 1)
 
-    if (playerIds === 'all') {
-      // Alle Buzzer freigeben
-      io.to(roomCode).emit('buzzer-unlocked', { playerIds: 'all' })
-      console.log(`✅ All buzzers unlocked in room ${roomCode}`)
-    } else if (Array.isArray(playerIds)) {
-      // Spezifische Buzzer freigeben
-      playerIds.forEach(playerId => {
-        const player = room.players.find(p => p.id === playerId)
-        if (player) {
-          io.to(player.id).emit('buzzer-unlocked', { playerId })
-          console.log(`✅ Buzzer unlocked for ${player.name}`)
-        }
+      socket.leave(roomCode)
+
+      io.to(roomCode).emit('player-left', {
+        playerName: player.name,
+        players: room.players
       })
+
+      console.log(`👤 Player left: ${player.name} from room ${roomCode}`)
     }
   })
 
-  // Join leaderboard as spectator
-  socket.on('join-leaderboard', (data) => {
-    const { roomCode } = data
-    const room = gameRooms.get(roomCode)
-
-    if (!room) {
-      socket.emit('error', { message: 'Room not found' })
-      return
-    }
-
-    // Join room as spectator (not as player)
-    socket.join(roomCode)
-    console.log(`Leaderboard spectator joined room ${roomCode}`)
-
-    // Send initial leaderboard data
-    socket.emit('leaderboard-update', {
-      players: room.players,
-      quizTitle: room.quiz?.title || 'Quiz'
-    })
-  })
-
-  // Handle disconnection
+  // Disconnect
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id)
+    console.log('🔴 Client disconnected:', socket.id)
 
-    // Handle player disconnect with grace period for reconnection
-    gameRooms.forEach((room, roomCode) => {
-      const playerIndex = room.players.findIndex(p => p.id === socket.id)
-
-      if (playerIndex !== -1) {
-        const player = room.players[playerIndex]
-
-        // Mark player as disconnected instead of removing immediately
-        player.disconnected = true
-        player.disconnectTime = Date.now()
-
-        console.log(`Player ${player.name} disconnected from room ${roomCode} - waiting for reconnection...`)
-
-        // Remove player after 60 seconds if they don't reconnect
-        setTimeout(() => {
-          const currentRoom = gameRooms.get(roomCode)
-          if (!currentRoom) return
-
-          const stillDisconnected = currentRoom.players.find(
-            p => p.name === player.name && p.disconnected && p.disconnectTime === player.disconnectTime
-          )
-
-          if (stillDisconnected) {
-            const idx = currentRoom.players.findIndex(p => p.name === player.name)
-            if (idx !== -1) {
-              currentRoom.players.splice(idx, 1)
-              io.to(roomCode).emit('player-left', {
-                playerId: socket.id,
-                playerName: player.name,
-                players: currentRoom.players
-              })
-              console.log(`Player ${player.name} removed from room ${roomCode} after timeout`)
-            }
-          }
-        }, 60000) // 60 seconds grace period
-      }
-
-      // If host disconnects, notify players and close room
+    // Check if disconnected client was a host
+    for (const [roomCode, room] of gameRooms.entries()) {
       if (room.host === socket.id) {
+        // Host disconnected - notify all players
         io.to(roomCode).emit('host-disconnected')
         gameRooms.delete(roomCode)
-        console.log('Host disconnected, room closed:', roomCode)
+        console.log(`🏠 Room ${roomCode} closed - host disconnected`)
+      } else {
+        // Player disconnected - just remove from room
+        const playerIndex = room.players.findIndex(p => p.id === socket.id)
+        if (playerIndex !== -1) {
+          const player = room.players[playerIndex]
+          room.players.splice(playerIndex, 1)
+
+          io.to(roomCode).emit('player-left', {
+            playerName: player.name,
+            players: room.players
+          })
+
+          console.log(`👤 Player disconnected: ${player.name} from room ${roomCode}`)
+        }
       }
-    })
+    }
   })
 })
 
-const PORT = process.env.PORT || 3001
-
-httpServer.listen(PORT, '0.0.0.0', () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 WebSocket server running on port ${PORT}`)
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`)
   console.log(`🌐 Ready to accept connections`)
