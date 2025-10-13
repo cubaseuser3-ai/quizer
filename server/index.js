@@ -96,19 +96,46 @@ io.on('connection', (socket) => {
     const { quizId, quizData } = data
     const roomCode = quizId.slice(-6).toUpperCase()
 
-    // Create room
-    gameRooms.set(roomCode, {
-      host: socket.id,
-      quiz: quizData,
-      players: [],
-      state: 'lobby',
-      currentQuestion: 0,
-      questionAnswers: {}
-    })
+    // Check if room already exists (host reconnection)
+    const existingRoom = gameRooms.get(roomCode)
 
-    socket.join(roomCode)
-    socket.emit('room-created', { roomCode })
-    console.log(`🏠 Room created: ${roomCode} by ${socket.id}`)
+    if (existingRoom && existingRoom.hostDisconnectedAt) {
+      // Host is reconnecting! Reuse existing room
+      console.log(`🔄 Host reconnecting to existing room: ${roomCode}`)
+
+      // Clear cleanup timer
+      if (existingRoom.cleanupTimer) {
+        clearTimeout(existingRoom.cleanupTimer)
+        delete existingRoom.cleanupTimer
+      }
+
+      // Update host socket ID and clear disconnection flag
+      existingRoom.host = socket.id
+      delete existingRoom.hostDisconnectedAt
+
+      socket.join(roomCode)
+      socket.emit('room-created', {
+        roomCode,
+        players: existingRoom.players,
+        reconnected: true
+      })
+
+      console.log(`✅ Host reconnected to room ${roomCode} with ${existingRoom.players.length} players`)
+    } else {
+      // Create new room
+      gameRooms.set(roomCode, {
+        host: socket.id,
+        quiz: quizData,
+        players: [],
+        state: 'lobby',
+        currentQuestion: 0,
+        questionAnswers: {}
+      })
+
+      socket.join(roomCode)
+      socket.emit('room-created', { roomCode })
+      console.log(`🏠 Room created: ${roomCode} by ${socket.id}`)
+    }
   })
 
   // Player joins room
@@ -501,23 +528,33 @@ io.on('connection', (socket) => {
     // Check if disconnected client was a host
     for (const [roomCode, room] of gameRooms.entries()) {
       if (room.host === socket.id) {
-        // Host disconnected - notify all players
-        io.to(roomCode).emit('host-disconnected')
-        gameRooms.delete(roomCode)
-        console.log(`🏠 Room ${roomCode} closed - host disconnected`)
+        // Host disconnected - mark for cleanup but keep room alive for reconnection
+        console.log(`⚠️  Host disconnected from room ${roomCode} - keeping room alive for 60s`)
+
+        // Don't delete room immediately - set a cleanup timer instead
+        room.hostDisconnectedAt = Date.now()
+
+        // Set cleanup timer (60 seconds grace period for host reconnection)
+        room.cleanupTimer = setTimeout(() => {
+          // Check if host reconnected in the meantime
+          if (gameRooms.has(roomCode) && gameRooms.get(roomCode).hostDisconnectedAt) {
+            // Host never reconnected - delete room
+            io.to(roomCode).emit('host-disconnected')
+            gameRooms.delete(roomCode)
+            console.log(`🏠 Room ${roomCode} closed - host did not reconnect within 60s`)
+          }
+        }, 60000) // 60 second grace period
+
       } else {
-        // Player disconnected - just remove from room
+        // Player disconnected - keep them in the room for potential reconnection
         const playerIndex = room.players.findIndex(p => p.id === socket.id)
         if (playerIndex !== -1) {
           const player = room.players[playerIndex]
-          room.players.splice(playerIndex, 1)
+          // Mark player as disconnected but don't remove
+          player.disconnected = true
+          player.disconnectedAt = Date.now()
 
-          io.to(roomCode).emit('player-left', {
-            playerName: player.name,
-            players: room.players
-          })
-
-          console.log(`👤 Player disconnected: ${player.name} from room ${roomCode}`)
+          console.log(`⚠️  Player ${player.name} disconnected from room ${roomCode} - marked for reconnection`)
         }
       }
     }

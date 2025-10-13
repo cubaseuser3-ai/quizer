@@ -1,7 +1,7 @@
 {
   "name": "quizer-backend",
-  "version": "1.1.0",
-  "description": "MyTech Quizer Backend Server with Score Fixes",
+  "version": "1.2.0",
+  "description": "MyTech Quizer Backend - Room persistence fix",
   "main": "index.js",
   "type": "module",
   "scripts": {
