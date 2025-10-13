@@ -98,10 +98,10 @@ function CompactBadges() {
           {backendStatus && (
             <div
               className="badge-item backend-badge"
-              title={`Backend ${backendStatus.version}\nUptime: ${backendStatus.uptime}\nActive Rooms: ${backendStatus.activeRooms}`}
+              title={`Backend v${backendStatus.version}\nStatus: ${backendStatus.status}\nActive Rooms: ${backendStatus.activeRooms}`}
             >
               <span className="status-dot"></span>
-              <span>v{backendStatus.version}</span>
+              <span>Backend v{backendStatus.version}</span>
             </div>
           )}
         </>
