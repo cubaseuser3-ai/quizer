@@ -1,7 +1,7 @@
 {
   "name": "quizer-backend",
   "version": "1.2.0",
-  "description": "MyTech Quizer Backend - Room persistence fix",
+  "description": "MyTech Quizer Backend - Duplicate name handling & UI improvements",
   "main": "index.js",
   "type": "module",
   "scripts": {

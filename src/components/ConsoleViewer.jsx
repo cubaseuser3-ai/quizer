@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Download, Trash2, Search, Terminal } from 'lucide-react'
+import { X, Download, Trash2, Search, Terminal, Copy, Check } from 'lucide-react'
 import logger from '../utils/consoleLogger'
 import './ConsoleViewer.css'
 
@@ -8,6 +8,7 @@ function ConsoleViewer({ onClose }) {
   const [filter, setFilter] = useState('all') // all, log, error, warn, info
   const [search, setSearch] = useState('')
   const [autoScroll, setAutoScroll] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     // Lade Logs initial
@@ -41,6 +42,23 @@ function ConsoleViewer({ onClose }) {
 
   const handleDownload = () => {
     logger.downloadLogs()
+  }
+
+  const handleCopyLogs = async () => {
+    // Format filtered logs as text
+    const logsText = filteredLogs.map(log => {
+      return `[${log.timestamp}] ${getLogIcon(log.type)} ${log.message}`
+    }).join('\n')
+
+    try {
+      await navigator.clipboard.writeText(logsText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+      console.log('✅ Logs copied to clipboard!')
+    } catch (err) {
+      console.error('❌ Failed to copy logs:', err)
+      alert('Fehler beim Kopieren der Logs!')
+    }
   }
 
   const filteredLogs = logs.filter(log => {
@@ -138,6 +156,14 @@ function ConsoleViewer({ onClose }) {
               />
               Auto-Scroll
             </label>
+            <button
+              className={`btn btn-sm ${copied ? 'btn-success' : 'btn-secondary'}`}
+              onClick={handleCopyLogs}
+              disabled={filteredLogs.length === 0}
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+              {copied ? 'Kopiert!' : 'Kopieren'}
+            </button>
             <button className="btn btn-sm btn-secondary" onClick={handleDownload}>
               <Download size={16} />
               Download

@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
   res.json({
     status: 'online',
     message: 'MyTech Quizer Backend Server',
-    version: '1.1.0',
+    version: '1.2.0',
     timestamp: new Date().toISOString(),
     activeRooms: gameRooms.size,
     totalPlayers: Array.from(gameRooms.values()).reduce((sum, room) => sum + room.players.length, 0)
@@ -77,7 +77,7 @@ app.get('/status', (req, res) => {
 
   res.json({
     status: 'OK',
-    version: '1.1.0',
+    version: '1.2.0',
     uptime: `${hours}h ${minutes}m ${seconds}s`,
     activeRooms: gameRooms.size,
     totalPlayers: Array.from(gameRooms.values()).reduce((sum, room) => sum + room.players.length, 0),
@@ -148,8 +148,8 @@ io.on('connection', (socket) => {
       return
     }
 
-    // Check if player already exists (reconnection)
-    const existingPlayer = room.players.find(p => p.id === socket.id || p.name === playerName)
+    // Check if player already exists (reconnection) - only by socket.id
+    const existingPlayer = room.players.find(p => p.id === socket.id)
 
     if (existingPlayer) {
       // Reconnection - update socket ID but keep score
@@ -166,10 +166,28 @@ io.on('connection', (socket) => {
         reconnected: true
       })
     } else {
-      // New player
+      // New player - check for duplicate names
+      let finalPlayerName = playerName
+
+      // Check if exact name exists
+      const exactMatch = room.players.find(p => p.name === playerName)
+
+      if (exactMatch) {
+        // Find all players with this base name (including numbered versions)
+        const baseName = playerName.replace(/ #\d+$/, '') // Remove existing number if any
+        const similarNames = room.players.filter(p => {
+          return p.name === baseName || p.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} #\\d+$`))
+        })
+
+        // Add number suffix starting from 2
+        const nextNumber = similarNames.length + 1
+        finalPlayerName = `${baseName} #${nextNumber}`
+        console.log(`⚠️  Duplicate name detected: ${playerName} → ${finalPlayerName}`)
+      }
+
       const player = {
         id: socket.id,
-        name: playerName,
+        name: finalPlayerName,
         avatar: playerAvatar,
         score: 0
       }
@@ -190,7 +208,7 @@ io.on('connection', (socket) => {
         lateJoin: room.state !== 'lobby'
       })
 
-      console.log(`👤 Player joined: ${playerName} (${socket.id}) in room ${roomCode}`)
+      console.log(`👤 Player joined: ${finalPlayerName} (${socket.id}) in room ${roomCode}`)
     }
   })
 
