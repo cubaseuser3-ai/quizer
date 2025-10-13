@@ -4,6 +4,7 @@ services:
     name: quizer-backend
     env: node
     plan: free
+    rootDir: server
     buildCommand: npm install
     startCommand: npm start
     envVars:
