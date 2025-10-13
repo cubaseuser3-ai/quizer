@@ -6,14 +6,12 @@ import JoinQuiz from './pages/JoinQuiz'
 import QuizHost from './pages/QuizHost'
 import PlayerSimulator from './pages/PlayerSimulator'
 import LiveLeaderboard from './pages/LiveLeaderboard'
-import ServerStatus from './components/ServerStatus'
 import './App.css'
 
 function App() {
   return (
     <Router basename="/">
-      <ServerStatus />
-      {/* VersionDisplay removed - now using CompactBadges in each page */}
+      {/* ServerStatus removed - now using CompactBadges in each page */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/create" element={<CreateQuiz />} />
