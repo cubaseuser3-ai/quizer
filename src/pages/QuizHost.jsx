@@ -939,8 +939,8 @@ function QuizHost() {
                 <ImageReveal
                   src={currentQuestion.image}
                   alt="Question"
-                  animation={currentQuestion.imageRevealAnimation || 'none'}
-                  duration={currentQuestion.imageRevealDuration || 5}
+                  animation={currentQuestion.type === 'buzzer' ? 'none' : (currentQuestion.imageRevealAnimation || 'none')}
+                  duration={currentQuestion.type === 'buzzer' ? 0 : (currentQuestion.imageRevealDuration || 5)}
                   style={{ margin: '20px 0' }}
                 />
               </div>
