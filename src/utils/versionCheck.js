@@ -29,10 +29,18 @@ export const checkForUpdates = async () => {
       console.log('   Alt:', currentVersion);
       console.log('   Neu:', serverVersion);
 
-      // Zeige Benachrichtigung
-      if (confirm('🔄 Eine neue Version der App ist verfügbar!\n\nJetzt neu laden?')) {
-        // Hard Reload um Cache zu umgehen
+      // Zeige Benachrichtigung und lade automatisch neu
+      const reloadNow = confirm('🔄 Eine neue Version der App ist verfügbar!\n\nJetzt neu laden? (lädt automatisch in 5 Sekunden)');
+
+      if (reloadNow) {
+        // Sofort neu laden
         window.location.reload(true);
+      } else {
+        // Automatisch nach 5 Sekunden neu laden
+        setTimeout(() => {
+          console.log('🔄 Auto-Reload: Lade neue Version...');
+          window.location.reload(true);
+        }, 5000);
       }
     }
   } catch (error) {

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Users, Play, SkipForward, Trophy, Copy, Check, RotateCcw, X, ExternalLink, Plus, Minus, Unlock } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
+import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
-import CompactBadges from '../components/CompactBadges'
 import ImageReveal from '../components/ImageReveal'
 import socket from '../socket'
 import { createConfetti } from '../utils/confetti'
@@ -34,10 +34,7 @@ function QuizHost() {
   const [playersWhoGotPoints, setPlayersWhoGotPoints] = useState([]) // Track who got points
   const [showUnlockWarning, setShowUnlockWarning] = useState(false) // Warning modal
   const [qrZoomed, setQrZoomed] = useState(false) // QR Code zoom state
-  const [showJoinQr, setShowJoinQr] = useState(false) // Show join QR code
-  const [showLeaderboardQr, setShowLeaderboardQr] = useState(false) // Show leaderboard QR code
   const [animatingPlayers, setAnimatingPlayers] = useState([]) // Players with animation highlight
-  const [showBackConfirmation, setShowBackConfirmation] = useState(false) // Back button confirmation modal
 
   // Demo players system
   const [demoPlayerCount, setDemoPlayerCount] = useState(3)
@@ -69,14 +66,16 @@ function QuizHost() {
       return
     }
 
-    // Connect socket
-    socket.connect()
+    // Only connect socket and create room if NOT in test mode
+    if (!isTestMode) {
+      // Connect socket
+      socket.connect()
 
-    // Create room
-    socket.emit('create-room', {
-      quizId,
-      quizData: foundQuiz
-    })
+      // Create room
+      socket.emit('create-room', {
+        quizId,
+        quizData: foundQuiz
+      })
 
       // Socket event listeners
       socket.on('room-created', (data) => {
@@ -109,8 +108,8 @@ function QuizHost() {
       })
 
       socket.on('player-answered', (data) => {
-        console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗', data.responseTime + 's', 'Bonus:', data.bonusPoints, 'NewScore:', data.newScore)
-        // Update player list with answer status AND score from server
+        console.log('Player answered:', data.playerName, data.correct ? '✓' : '✗', data.responseTime + 's')
+        // Update player list with answer status
         setPlayers(prev => prev.map(p =>
           p.id === data.playerId
             ? {
@@ -118,8 +117,7 @@ function QuizHost() {
                 hasAnswered: true,
                 correct: data.correct,
                 responseTime: data.responseTime,
-                bonusPoints: data.bonusPoints || 0,
-                score: data.newScore !== undefined ? data.newScore : p.score  // Use server score if available
+                bonusPoints: data.bonusPoints || 0
               }
             : p
         ))
@@ -147,16 +145,23 @@ function QuizHost() {
             : p
         ))
       })
+    } else {
+      // In test mode, set a dummy room code for display
+      setRoomCode('TEST-MODE')
+      console.log('🧪 Test mode: Skipping socket connection and room creation')
+    }
 
     // Cleanup
     return () => {
-      socket.off('room-created')
-      socket.off('player-joined')
-      socket.off('player-left')
-      socket.off('player-answered')
-      socket.off('buzzer-pressed')
-      socket.off('player-score-updated')
-      socket.disconnect()
+      if (!isTestMode) {
+        socket.off('room-created')
+        socket.off('player-joined')
+        socket.off('player-left')
+        socket.off('player-answered')
+        socket.off('buzzer-pressed')
+        socket.off('player-score-updated')
+        socket.disconnect()
+      }
     }
   }, [quizId, navigate])
 
@@ -217,9 +222,9 @@ function QuizHost() {
 
   const startGame = () => {
     try {
-      console.log('startGame called', { quiz, players: players.length, currentQuestionIndex })
+      console.log('startGame called', { quiz, players: players.length, currentQuestionIndex, isTestMode })
 
-      if (players.length === 0) {
+      if (players.length === 0 && !isTestMode) {
         alert('Warte auf Spieler!')
         return
       }
@@ -243,16 +248,22 @@ function QuizHost() {
       setBuzzerLockedPlayers([]) // Unlock all buzzers at start
       setPlayersWhoGotPoints([]) // Reset points tracking
 
-      // Unlock all buzzers for clients
-      socket.emit('unlock-buzzers', {
-        roomCode: joinCode,
-        playerIds: 'all'
-      })
+      // Unlock all buzzers for clients (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('unlock-buzzers', {
+          roomCode: joinCode,
+          playerIds: 'all'
+        })
 
-      // Emit game start to all players
-      socket.emit('start-game', { roomCode: joinCode })
-
+        // Emit game start to all players
+        socket.emit('start-game', { roomCode: joinCode })
+      }
       console.log('Game started successfully')
+
+      // Simuliere Demo-Spieler Antworten
+      if (isTestMode) {
+        simulateDemoAnswers(question)
+      }
     } catch (error) {
       console.error('❌ ERROR in startGame:', error)
       alert('Fehler beim Starten: ' + error.message)
@@ -273,23 +284,34 @@ function QuizHost() {
       setBuzzerLockedPlayers([]) // Unlock all buzzers
       setPlayersWhoGotPoints([]) // Reset points tracking
 
-      // Unlock all buzzers for clients
-      socket.emit('unlock-buzzers', {
-        roomCode: joinCode,
-        playerIds: 'all'
-      })
+      // Unlock all buzzers for clients (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('unlock-buzzers', {
+          roomCode: joinCode,
+          playerIds: 'all'
+        })
+      }
 
       // Reset player answer status
       setPlayers(prev => prev.map(p => ({ ...p, hasAnswered: false, correct: false, responseTime: null, bonusPoints: 0 })))
 
-      // Emit next question
-      socket.emit('next-question', { roomCode: joinCode })
+      // Emit next question (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('next-question', { roomCode: joinCode })
+      }
+
+      // Simuliere Demo-Spieler Antworten
+      if (isTestMode) {
+        simulateDemoAnswers(question)
+      }
     } else {
       setGameState('final')
       // Konfetti starten
       createConfetti()
-      // Game over - show results
-      socket.emit('show-results', { roomCode: joinCode })
+      // Game over - show results (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('show-results', { roomCode: joinCode })
+      }
     }
   }
 
@@ -302,11 +324,19 @@ function QuizHost() {
   const showResults = () => {
     setShowAnswers(true)
 
-    // WICHTIG: Punkte werden vom Server berechnet und sind bereits im player.score enthalten!
-    // Der Server berechnet: Grundpunkte + Geschwindigkeitsbonus (50/30/10)
-    // Die Scores wurden bereits bei 'player-answered' vom Server synchronisiert
-
-    const updatedPlayers = players
+    // Berechne Punkte für alle Spieler die richtig geantwortet haben
+    const currentQuestion = quiz.questions[currentQuestionIndex]
+    const updatedPlayers = players.map(player => {
+      if (player.hasAnswered && player.correct) {
+        const pointsEarned = currentQuestion.points || 100
+        return {
+          ...player,
+          score: (player.score || 0) + pointsEarned
+        }
+      }
+      return player
+    })
+    setPlayers(updatedPlayers)
 
     // Prüfe ob alle Spieler falsch geantwortet haben
     const allWrong = players.length > 0 && players.every(p => p.hasAnswered && !p.correct)
@@ -319,7 +349,9 @@ function QuizHost() {
           const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
           setPreviousRankings(currentRankings)
           setGameState('results')
-          socket.emit('show-results', { roomCode: joinCode })
+          if (!isTestMode) {
+            socket.emit('show-results', { roomCode: joinCode })
+          }
         } else {
           nextQuestion()
         }
@@ -332,7 +364,9 @@ function QuizHost() {
           const currentRankings = [...updatedPlayers].sort((a, b) => (b.score || 0) - (a.score || 0))
           setPreviousRankings(currentRankings)
           setGameState('results')
-          socket.emit('show-results', { roomCode: joinCode })
+          if (!isTestMode) {
+            socket.emit('show-results', { roomCode: joinCode })
+          }
         }, 2000)
       }
     }
@@ -340,8 +374,10 @@ function QuizHost() {
 
   const handleRestartQuiz = () => {
     if (window.confirm('🔄 Quiz neu starten?\n\nAlle Punkte werden zurückgesetzt und das Quiz beginnt von vorne.')) {
-      // Send restart event to server
-      socket.emit('restart-game', { roomCode: joinCode })
+      // Send restart event to server (only if not in test mode)
+      if (!isTestMode) {
+        socket.emit('restart-game', { roomCode: joinCode })
+      }
 
       // Update local state
       setGameState('lobby')
@@ -357,7 +393,9 @@ function QuizHost() {
 
   const handleEndQuiz = () => {
     if (window.confirm('❌ Quiz beenden?\n\nDas Quiz wird beendet und alle Spieler werden getrennt.')) {
-      socket.disconnect()
+      if (!isTestMode) {
+        socket.disconnect()
+      }
       navigate('/')
     }
   }
@@ -404,12 +442,14 @@ function QuizHost() {
       setPreviousRankings([])
     }, 1500) // Slightly longer than transition to ensure animation completes
 
-    // Sende Update an Server und Spieler
-    socket.emit('adjust-player-points', {
-      roomCode: joinCode,
-      playerId: selectedPlayer.id,
-      points: points
-    })
+    // Sende Update an Server und Spieler (only if not in test mode)
+    if (!isTestMode) {
+      socket.emit('adjust-player-points', {
+        roomCode: joinCode,
+        playerId: selectedPlayer.id,
+        points: points
+      })
+    }
 
     setShowPointsModal(false)
     setSelectedPlayer(null)
@@ -442,12 +482,14 @@ function QuizHost() {
     setBuzzerLockedPlayers([])
     setPlayersWhoGotPoints([]) // Reset for next question
 
-    console.log('   Emitting unlock-buzzers event for ALL players')
-    socket.emit('unlock-buzzers', {
-      roomCode: joinCode,
-      playerIds: 'all'
-    })
-    console.log('✅ unlock-buzzers event sent')
+    if (!isTestMode) {
+      console.log('   Emitting unlock-buzzers event for ALL players')
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: 'all'
+      })
+      console.log('✅ unlock-buzzers event sent')
+    }
 
     setShowUnlockWarning(false) // Close warning if open
   }
@@ -458,12 +500,14 @@ function QuizHost() {
 
     setBuzzerLockedPlayers(prev => prev.filter(id => id !== playerId))
 
-    console.log('   Emitting unlock-buzzers event for player:', playerId)
-    socket.emit('unlock-buzzers', {
-      roomCode: joinCode,
-      playerIds: [playerId]
-    })
-    console.log('✅ unlock-buzzers event sent for player:', playerId)
+    if (!isTestMode) {
+      console.log('   Emitting unlock-buzzers event for player:', playerId)
+      socket.emit('unlock-buzzers', {
+        roomCode: joinCode,
+        playerIds: [playerId]
+      })
+      console.log('✅ unlock-buzzers event sent for player:', playerId)
+    }
   }
 
   // Ranglisten-Animation vorbereiten
@@ -483,12 +527,14 @@ function QuizHost() {
   const awardPoints = (playerId, playerName) => {
     const points = currentQuestion.points
 
-    // Send to backend to update player score
-    socket.emit('award-buzzer-points', {
-      roomCode: joinCode,
-      playerId: playerId,
-      points: points
-    })
+    // Send to backend to update player score (only if not in test mode)
+    if (!isTestMode) {
+      socket.emit('award-buzzer-points', {
+        roomCode: joinCode,
+        playerId: playerId,
+        points: points
+      })
+    }
 
     // Update local players state
     setPlayers(prev => prev.map(p =>
@@ -520,43 +566,6 @@ function QuizHost() {
 
   return (
     <div className="quiz-host">
-      {/* Back Button - Top Left */}
-      <button
-        onClick={() => setShowBackConfirmation(true)}
-        style={{
-          position: 'fixed',
-          top: '20px',
-          left: '20px',
-          padding: '12px 20px',
-          background: 'rgba(255, 59, 48, 0.9)',
-          backdropFilter: 'blur(10px)',
-          color: 'white',
-          border: 'none',
-          borderRadius: '12px',
-          fontSize: '16px',
-          fontWeight: '600',
-          zIndex: 1000,
-          boxShadow: '0 4px 12px rgba(255, 59, 48, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          cursor: 'pointer',
-          transition: 'all 0.2s'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 59, 48, 1)'
-          e.currentTarget.style.transform = 'translateY(-2px)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(255, 59, 48, 0.9)'
-          e.currentTarget.style.transform = 'translateY(0)'
-        }}
-        title="Zurück zur Startseite"
-      >
-        <span>←</span>
-        <span>Zurück</span>
-      </button>
-
       {/* Room Code - Bottom Left */}
       <div style={{
         position: 'fixed',
@@ -657,11 +666,8 @@ function QuizHost() {
               {/* Live Leaderboard Button */}
               <button
                 className="btn btn-info"
-                onClick={() => {
-                  const leaderboardUrl = `${window.location.origin}/leaderboard/${joinCode}`
-                  window.open(leaderboardUrl, 'leaderboard', 'width=1200,height=800')
-                }}
-                title="Live Rangliste in neuem Fenster öffnen"
+                onClick={() => setShowLeaderboardModal(true)}
+                title="Live Rangliste anzeigen"
                 style={{ width: '100%' }}
               >
                 <Trophy size={18} />
@@ -693,112 +699,34 @@ function QuizHost() {
               </div>
               <p className="join-url">{joinUrl}</p>
 
-              {/* QR Code Button */}
+              {/* QR Code */}
               <div style={{ marginTop: '30px', textAlign: 'center' }}>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setShowJoinQr(!showJoinQr)}
-                  style={{ marginBottom: '16px' }}
+                <h3 style={{ marginBottom: '16px' }}>Oder QR-Code scannen:</h3>
+                <div
+                  style={{
+                    display: 'inline-block',
+                    padding: '20px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    position: 'relative',
+                    border: '3px solid #e2e8f0',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s'
+                  }}
+                  onClick={() => setQrZoomed(!qrZoomed)}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  {showJoinQr ? 'QR-Code ausblenden' : '📱 QR-Code anzeigen'}
-                </button>
-
-                {showJoinQr && (
-                  <>
-                    <h3 style={{ marginBottom: '16px' }}>Oder QR-Code scannen:</h3>
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        padding: '20px',
-                        background: 'white',
-                        borderRadius: '12px',
-                        position: 'relative',
-                        border: '3px solid #e2e8f0',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s'
-                      }}
-                      onClick={() => setQrZoomed(!qrZoomed)}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                      <QRCodeSVG
-                        value={joinUrl}
-                        size={200}
-                        level="H"
-                        includeMargin={false}
-                      />
-                    </div>
-                    <p style={{ marginTop: '12px', fontSize: '14px', color: '#64748b' }}>
-                      💡 Klicke auf den QR-Code um ihn zu vergrößern
-                    </p>
-                  </>
-                )}
-              </div>
-
-              {/* Live Leaderboard QR Code */}
-              <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '12px', border: '2px solid #6366f1' }}>
-                <h3 style={{ marginBottom: '16px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Trophy size={24} />
-                  Live Rangliste für Zuschauer
-                </h3>
-                <p style={{ marginBottom: '12px', fontSize: '14px', color: '#64748b' }}>
-                  Öffne die Live Rangliste auf einem zweiten Bildschirm:
-                </p>
-
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setShowLeaderboardQr(!showLeaderboardQr)}
-                  style={{ marginBottom: '16px' }}
-                >
-                  {showLeaderboardQr ? 'QR-Code ausblenden' : '📱 QR-Code anzeigen'}
-                </button>
-
-                {showLeaderboardQr && (
-                  <>
-                    <div
-                      style={{
-                        display: 'inline-block',
-                        padding: '20px',
-                        background: 'white',
-                        borderRadius: '12px',
-                        border: '3px solid #6366f1',
-                        cursor: 'pointer',
-                        transition: 'transform 0.2s'
-                      }}
-                      onClick={() => {
-                        const leaderboardUrl = `${window.location.origin}/leaderboard/${joinCode}`
-                        window.open(leaderboardUrl, 'leaderboard', 'width=1200,height=800')
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                    >
-                      <QRCodeSVG
-                        value={`${window.location.origin}/leaderboard/${joinCode}`}
-                        size={150}
-                        level="H"
-                        includeMargin={false}
-                      />
-                    </div>
-                    <p style={{ marginTop: '12px', fontSize: '12px', color: '#64748b' }}>
-                      💡 Klicke auf den QR-Code um die Live Rangliste zu öffnen
-                    </p>
-                  </>
-                )}
-
-                <div style={{ marginTop: '12px' }}>
-                  <button
-                    className="btn btn-outline"
-                    onClick={() => {
-                      const leaderboardUrl = `${window.location.origin}/leaderboard/${joinCode}`
-                      navigator.clipboard.writeText(leaderboardUrl)
-                      alert('🔗 Leaderboard-Link kopiert!')
-                    }}
-                    style={{ fontSize: '14px' }}
-                  >
-                    <Copy size={16} />
-                    Leaderboard-Link kopieren
-                  </button>
+                  <QRCodeSVG
+                    value={joinUrl}
+                    size={200}
+                    level="H"
+                    includeMargin={false}
+                  />
                 </div>
+                <p style={{ marginTop: '12px', fontSize: '14px', color: '#64748b' }}>
+                  💡 Klicke auf den QR-Code um ihn zu vergrößern
+                </p>
               </div>
 
               {/* QR Code Zoom Modal */}
@@ -861,17 +789,9 @@ function QuizHost() {
                       level="H"
                       includeMargin={false}
                     />
-                    <div style={{ textAlign: 'center', marginTop: '24px' }}>
-                      <p style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '8px' }}>
-                        Room Code:
-                      </p>
-                      <p style={{ fontSize: '36px', fontWeight: '900', color: '#1e293b', letterSpacing: '4px' }}>
-                        {joinCode}
-                      </p>
-                      <p style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
-                        {joinUrl}
-                      </p>
-                    </div>
+                    <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '18px', fontWeight: '600', color: '#1e293b' }}>
+                      {joinCode}
+                    </p>
                   </div>
                 </div>
               )}
@@ -882,6 +802,11 @@ function QuizHost() {
                 <h3>
                   <Users size={24} />
                   Wartende Spieler ({players.length})
+                  {isTestMode && (
+                    <span style={{ marginLeft: '12px', fontSize: '14px', background: '#fbbf24', color: '#1e293b', padding: '4px 12px', borderRadius: '12px', fontWeight: '700' }}>
+                      🧪 TEST-MODUS
+                    </span>
+                  )}
                 </h3>
               </div>
               <div className="players-grid">
@@ -893,8 +818,19 @@ function QuizHost() {
                 ))}
                 {players.length === 0 && (
                   <div className="empty-players">
-                    <p>Warte auf Spieler...</p>
-                    <div className="pulse-dot"></div>
+                    {isTestMode ? (
+                      <>
+                        <p>🧪 Test-Modus aktiv</p>
+                        <p style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>
+                          Du kannst das Quiz ohne Spieler testen
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p>Warte auf Spieler...</p>
+                        <div className="pulse-dot"></div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -993,29 +929,13 @@ function QuizHost() {
                             <span className="player-avatar">{press.playerAvatar}</span>
                             <span className="player-name">{press.playerName}</span>
                           </div>
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                              className="btn btn-success"
-                              onClick={() => awardPoints(press.playerId, press.playerName)}
-                            >
-                              <Trophy size={18} />
-                              {currentQuestion.points} Punkte
-                            </button>
-                            <button
-                              className="btn btn-outline"
-                              onClick={() => {
-                                // Lock player (mark as processed without points)
-                                setPlayersWhoGotPoints(prev => [...prev, press.playerId])
-                                // Remove from buzzer list
-                                setBuzzerPresses(prev => prev.filter(p => p.playerId !== press.playerId))
-                                console.log(`❌ ${press.playerName} - Keine Punkte gegeben`)
-                              }}
-                              title="Keine Punkte geben und weitermachen"
-                            >
-                              <X size={18} />
-                              Keine Punkte
-                            </button>
-                          </div>
+                          <button
+                            className="btn btn-success"
+                            onClick={() => awardPoints(press.playerId, press.playerName)}
+                          >
+                            <Trophy size={18} />
+                            {currentQuestion.points} Punkte geben
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -1108,25 +1028,24 @@ function QuizHost() {
                       ) : (
                         <span style={{ color: '#94a3b8' }}>⏳ Wartet...</span>
                       )}
+                      <span style={{
+                        fontSize: '14px',
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        fontWeight: '600',
+                        marginLeft: '12px'
+                      }}>
+                        Punkte +/-
+                      </span>
                       <button
-                        className="btn btn-sm"
+                        className="btn btn-sm btn-outline-light"
                         onClick={() => openPointsModal(player)}
                         style={{
-                          marginLeft: '12px',
-                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                          border: 'none',
-                          color: 'white',
-                          fontWeight: '700',
-                          fontSize: '13px',
-                          padding: '8px 16px',
-                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
+                          marginLeft: '8px',
+                          background: 'rgba(255, 255, 255, 0.15)',
+                          borderColor: 'rgba(255, 255, 255, 0.3)'
                         }}
                       >
                         <Plus size={16} />
-                        Punkte
                       </button>
                     </div>
                   ))
@@ -1241,24 +1160,20 @@ function QuizHost() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div className="player-score">{player.score}</div>
                       <button
-                        className="btn btn-sm"
+                        className="btn btn-sm btn-outline"
                         onClick={() => openPointsModal(player)}
                         style={{
-                          padding: '8px 16px',
-                          fontSize: '13px',
-                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                          border: 'none',
-                          color: 'white',
-                          fontWeight: '700',
-                          boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
+                          padding: '6px 12px',
+                          fontSize: '14px',
+                          background: 'rgba(102, 126, 234, 0.1)',
+                          borderColor: 'rgba(102, 126, 234, 0.3)',
+                          color: 'var(--primary)',
+                          fontWeight: '600'
                         }}
                         title="Punkte manuell anpassen"
                       >
-                        <Plus size={16} />
-                        Punkte
+                        <Plus size={14} style={{ marginRight: '4px' }} />
+                        ±
                       </button>
                     </div>
                   </div>
@@ -1417,15 +1332,9 @@ function QuizHost() {
       {/* Host-Kontroll-Buttons (immer sichtbar außer in Lobby und Final) */}
       {gameState !== 'lobby' && gameState !== 'final' && (
         <div className="host-controls">
-          <button
-            className="btn btn-success"
-            onClick={() => {
-              const leaderboardUrl = `${window.location.origin}/leaderboard/${joinCode}`
-              window.open(leaderboardUrl, 'leaderboard', 'width=1200,height=800')
-            }}
-          >
+          <button className="btn btn-success" onClick={() => setShowLeaderboardModal(true)}>
             <Trophy size={20} />
-            Live Rangliste
+            Rangliste
           </button>
           <button className="btn btn-warning" onClick={handleRestartQuiz}>
             <RotateCcw size={20} />
@@ -1620,74 +1529,7 @@ function QuizHost() {
         </div>
       )}
 
-      {/* Back Confirmation Modal */}
-      {showBackConfirmation && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10000,
-            animation: 'fadeIn 0.2s'
-          }}
-          onClick={() => setShowBackConfirmation(false)}
-        >
-          <div
-            style={{
-              background: 'white',
-              borderRadius: '16px',
-              padding: '32px',
-              maxWidth: '500px',
-              width: '90%',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-              animation: 'slideUp 0.3s'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 style={{ margin: '0 0 16px 0', fontSize: '24px', fontWeight: '700', color: '#1e293b' }}>
-              ⚠️ Quiz verlassen?
-            </h2>
-            <p style={{ margin: '0 0 24px 0', fontSize: '16px', color: '#64748b', lineHeight: '1.6' }}>
-              Möchtest du das Quiz wirklich verlassen? <br/>
-              <strong style={{ color: '#ef4444' }}>Das Quiz wird beendet und alle Spieler werden rausgeworfen.</strong>
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button
-                className="btn btn-outline"
-                onClick={() => setShowBackConfirmation(false)}
-                style={{ padding: '12px 24px' }}
-              >
-                Abbrechen
-              </button>
-              <button
-                className="btn btn-danger"
-                onClick={() => {
-                  // Leave room and disconnect
-                  socket.emit('leave-room', { roomCode: joinCode })
-                  socket.disconnect()
-                  // Navigate back to home
-                  navigate('/')
-                }}
-                style={{
-                  padding: '12px 24px',
-                  background: '#ef4444',
-                  color: 'white'
-                }}
-              >
-                Quiz verlassen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <CompactBadges />
+      <ZoomControls />
       <ConsoleButton />
     </div>
   )

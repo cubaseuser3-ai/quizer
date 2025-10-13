@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Plus, Trash2, ArrowLeft, Save, Play, X, Download, Upload, Image as ImageIcon, Copy, Eye } from 'lucide-react'
-import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import CompactBadges from '../components/CompactBadges'
 import ImageReveal from '../components/ImageReveal'
 import './CreateQuiz.css'
 import { getQuizzes, getQuizById, saveQuiz, importQuizzes } from '../utils/quizStorage'
@@ -401,13 +401,6 @@ function CreateQuiz() {
     }
   }
 
-  const handleTestQuiz = async () => {
-    const quiz = await saveQuizData()
-    if (quiz) {
-      alert('📝 Test-Modus: Quiz wird gestartet!\n\nDu kannst das Quiz jetzt ohne Spieler testen.')
-      navigate(`/host/${quiz.id}?test=true`)
-    }
-  }
 
   return (
     <div className="create-quiz">
@@ -436,10 +429,6 @@ function CreateQuiz() {
               <button className="btn btn-outline" onClick={handleSave} disabled={questions.length === 0}>
                 <Save size={20} />
                 Speichern
-              </button>
-              <button className="btn btn-warning" onClick={handleTestQuiz} disabled={questions.length === 0} title="Quiz im Test-Modus starten (ohne Spieler)">
-                <Play size={20} />
-                Test
               </button>
               <button className="btn btn-success" onClick={handleSaveAndStart} disabled={questions.length === 0}>
                 <Save size={20} />
@@ -1222,7 +1211,7 @@ function CreateQuiz() {
         </div>
       )}
 
-      <ZoomControls />
+      <CompactBadges />
       <ConsoleButton />
     </div>
   )

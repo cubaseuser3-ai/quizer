@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { LogIn, ArrowLeft } from 'lucide-react'
-import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import CompactBadges from '../components/CompactBadges'
 import './JoinQuiz.css'
 
 function JoinQuiz() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [joinCode, setJoinCode] = useState(searchParams.get('code') || '')
-  const [playerName, setPlayerName] = useState('')
-  const [selectedAvatar, setSelectedAvatar] = useState('👤')
+  const [playerName, setPlayerName] = useState(searchParams.get('autoName') || '')
+  const [selectedAvatar, setSelectedAvatar] = useState(searchParams.get('autoAvatar') || '👤')
 
   const avatars = ['👨', '👩', '👧', '👦', '🧑', '👴', '👵', '🧔', '👨‍🦰', '👩‍🦰', '👨‍🦱', '👩‍🦱',
                    '🦸‍♂️', '🦸‍♀️', '🧙‍♂️', '🧙‍♀️', '🧛‍♂️', '🧛‍♀️', '🤖', '👽', '👻', '🎃', '🐶', '🐱']
+
+  // Auto-join for demo players
+  useEffect(() => {
+    const autoJoin = searchParams.get('autoJoin')
+    if (autoJoin === 'true' && joinCode && playerName) {
+      // Automatically join after a short delay
+      setTimeout(() => {
+        handleJoin()
+      }, 500)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleJoin = () => {
     if (!playerName.trim()) {
@@ -124,7 +135,7 @@ function JoinQuiz() {
         </div>
       </div>
 
-      <ZoomControls />
+      <CompactBadges />
       <ConsoleButton />
     </div>
   )

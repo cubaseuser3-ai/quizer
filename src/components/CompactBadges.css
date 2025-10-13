@@ -1,0 +1,296 @@
+.compact-badges {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* Toggle Button */
+.badge-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
+  color: white;
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.4);
+  transition: all 0.3s;
+}
+
+.badge-toggle:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
+}
+
+.badge-toggle:active {
+  transform: translateY(-1px);
+}
+
+.badge-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+  cursor: help;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.badge-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Zoom Badge */
+.zoom-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+  cursor: default;
+}
+
+.badge-btn {
+  background: rgba(99, 102, 241, 0.1);
+  border: none;
+  border-radius: 6px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #6366f1;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.badge-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  transform: scale(1.1);
+}
+
+.badge-btn:active {
+  transform: scale(0.95);
+}
+
+.badge-value {
+  min-width: 30px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.badge-value:hover {
+  text-decoration: underline;
+}
+
+/* Version Badge */
+.version-badge {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.9) 0%, rgba(124, 58, 237, 0.9) 100%);
+  color: white;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.version-badge:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+}
+
+.version-badge:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Backend Badge */
+.backend-badge {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%);
+  color: white;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Version Modal Styles (from VersionDisplay) */
+.version-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s;
+  pointer-events: auto !important; /* Override parent pointer-events: none */
+}
+
+.version-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s;
+  pointer-events: auto !important; /* Override parent pointer-events: none */
+}
+
+.version-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.version-modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.version-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #64748b;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.version-close:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.version-modal-body {
+  padding: 24px;
+}
+
+.version-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.version-info-row:last-child {
+  border-bottom: none;
+}
+
+.version-label {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.version-value {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.version-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.version-modal-footer button {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive - even smaller on mobile */
+@media (max-width: 768px) {
+  .compact-badges {
+    bottom: 8px;
+    right: 8px;
+    gap: 4px;
+  }
+
+  .badge-item {
+    padding: 3px 6px;
+    font-size: 9px;
+    border-radius: 8px;
+  }
+
+  .badge-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 12px;
+  }
+
+  .badge-value {
+    min-width: 25px;
+  }
+
+  .status-dot {
+    width: 5px;
+    height: 5px;
+  }
+}

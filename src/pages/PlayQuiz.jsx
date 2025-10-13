@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Zap, Trophy, Clock, AlertCircle, RefreshCw } from 'lucide-react'
-import ZoomControls from '../components/ZoomControls'
 import ConsoleButton from '../components/ConsoleButton'
+import CompactBadges from '../components/CompactBadges'
 import socket from '../socket'
 import './PlayQuiz.css'
 
@@ -695,7 +695,7 @@ function PlayQuiz() {
         </div>
       )}
 
-      <ZoomControls />
+      <CompactBadges />
       <ConsoleButton />
     </div>
   )

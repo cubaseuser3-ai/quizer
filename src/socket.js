@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client'
 
-// Backend URL - wird automatisch gesetzt basierend auf Umgebung
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001'
+// Backend URL - NUR PRODUCTION (kein localhost mehr!)
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'https://quizer-backend-9v9a.onrender.com'
 
 // Debug: Log socket URL
 console.log('🔌 Socket URL:', SOCKET_URL)
